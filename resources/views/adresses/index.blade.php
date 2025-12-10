@@ -6,449 +6,352 @@
 
 <style>
 :root {
-    --decathlon-blue: #3643ba;
-    --decathlon-green: #00B388;
-    --error-red: #E31B23;
+    --blue: #2B3DB8;
+    --green: #00B388;
+    --gray-light: #F7F7F9;
 }
 
-.glass-card {
+.wrapper-adresser {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.card {
     background: white;
-    padding: 1.8rem;
-    border-radius: 14px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    border-radius: 15px;
+    padding: 1.6rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
     margin-bottom: 1.5rem;
 }
 
-.status-message {
-    padding: 0.75rem 1rem;
-    border-radius: 10px;
-    margin-top: 0.75rem;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.status-success { background: #d1fae5; color: #065f46; }
-.status-error   { background: #fee2e2; color: #991b1b; }
-.status-info    { background: #dbeafe; color: #1e40af; }
-
-.btn {
-    padding: 0.9rem 1rem;
-    border-radius: 10px;
+.card h2 {
+    font-size: 1.3rem;
     font-weight: 700;
-    cursor: pointer;
-    border: none;
-    width: 100%;
-    text-align: center;
+    color: #1E1E2D;
+    margin-bottom: 1rem;
 }
 
-.btn-blue  { background: var(--decathlon-blue); color: white; }
-.btn-green { background: var(--decathlon-green); color: white; }
-
-.input-primary, .input-secondary {
+.input {
     width: 100%;
-    border: 2px solid #e5e7eb;
+    padding: .9rem .8rem;
     border-radius: 10px;
-    padding: 0.8rem 0.9rem;
-    font-size: 0.95rem;
-    font-weight: 500;
+    border: 2px solid #E5E7EB;
+    font-size: 1rem;
 }
-
-.input-primary:focus, .input-secondary:focus {
+.input:focus {
     outline: none;
-    border-color: var(--decathlon-blue);
+    border-color: var(--blue);
 }
 
 .label {
-    font-size: 0.85rem;
+    font-size: .85rem;
     font-weight: 600;
-    color: #374151;
-    margin-bottom: 0.25rem;
-    display: block;
+    color: #555;
 }
 
-.suggestions-dropdown {
-    background: white;
-    border-radius: 10px;
-    border: 1px solid #ddd;
-    margin-top: 0.3rem;
-    display: none;
-    max-height: 180px;
-    overflow-y: auto;
-    z-index: 30;
-    position: absolute;
-    width: 100%;
+#articleImage {
+    width: 100px;
+    height: 100px;
+    border-radius: 12px;
+    object-fit: cover;
+    flex-shrink: 0;
 }
-
-.suggestion-item {
-    padding: 0.6rem 0.9rem;
-    cursor: pointer;
-    font-size: 0.9rem;
-}
-.suggestion-item:hover { background: #eef2ff; }
 
 .zone-badge {
-    background: var(--decathlon-blue);
+    background: var(--blue);
+    padding: .35rem .7rem;
+    border-radius: 12px;
     color: white;
-    padding: 0.35rem 0.7rem;
-    border-radius: 999px;
-    font-size: 0.85rem;
+    font-size: .85rem;
+    font-weight: bold;
+}
+
+.suggestions {
+    position: absolute;
+    background: white;
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid #DDD;
+    margin-top: .2rem;
+    display: none;
+    z-index: 20;
+}
+.suggestions div {
+    padding: .7rem .8rem;
+    cursor: pointer;
+}
+.suggestions div:hover {
+    background: #EEF1FF;
+}
+
+.status {
+    margin-top: .7rem;
+    padding: .8rem;
+    border-radius: 10px;
     font-weight: 600;
 }
+.status-success { background: #D1FAE5; color:#065F46; }
+.status-error { background: #FEE2E2; color:#9B1C1C; }
 
-.badge-zone-existing {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.6rem;
-    border-radius: 999px;
-    background: #eef2ff;
-    color: #1f2937;
-    font-size: 0.8rem;
-    margin-right: 0.35rem;
-    margin-bottom: 0.3rem;
+.btn-confirm {
+    background: var(--green);
+    color: white;
+    padding: 1rem;
+    border: none;
+    border-radius: 10px;
+    font-weight: bold;
+    width: 100%;
+    cursor: pointer;
 }
+.btn-confirm:hover { background:#00A476; }
+
 </style>
 
-<div class="max-w-5xl mx-auto space-y-6">
+<div class="wrapper-adresser">
 
-    {{-- 1️⃣ RECHERCHE ARTICLE --}}
-    <div class="glass-card">
-        <h2 class="font-bold text-xl mb-4">1️⃣ Recherche de l'article</h2>
+    {{-- 1 — RECHERCHE ARTICLE --}}
+    <div class="card">
+        <h2>1. Recherche de l'article</h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-            {{-- Colonne gauche : formulaire recherche --}}
-            <div class="col-span-1 space-y-3">
-                <div>
-                    <label class="label">Référence article</label>
-                    <input id="refInput"
-                           type="text"
-                           class="input-primary"
-                           placeholder="Ex : 608629">
-                </div>
+        <label class="label">Référence article</label>
+        <input type="text" id="refInput" class="input" placeholder="Saisir la référence...">
 
-                <button id="searchBtn" class="btn btn-blue">
-                    Chercher
-                </button>
+        <div id="articleStatus"></div>
 
-                <div id="articleStatus"></div>
-            </div>
+        <div id="articleBlock" style="display:none;" class="flex gap-4 mt-4">
+            <img id="articleImage" src="">
 
-            {{-- Colonne droite : info produit --}}
-            <div class="col-span-2 flex gap-4 items-start" id="articleCard" style="display:none;">
-                <img id="articleImage"
-                     class="w-28 h-28 rounded shadow object-cover flex-shrink-0"
-                     src=""
-                     alt="Image article">
+            <div>
+                <p class="text-sm text-gray-600">
+                    Référence : <b id="articleRef"></b>
+                </p>
+                <p class="font-bold text-lg" id="articleName"></p>
+                <p class="text-sm text-gray-600">
+                    Stock total : <b id="articleStock"></b>
+                </p>
 
-                <div class="space-y-1">
-                    <p class="text-sm text-gray-500">Référence : <span id="articleRef" class="font-semibold"></span></p>
-                    <p class="text-lg font-bold text-gray-900" id="articleName"></p>
-                    <p class="text-sm text-gray-600">
-                        Stock total : <span id="articleStock" class="font-semibold"></span>
-                    </p>
-
-                    <div class="mt-2">
-                        <p class="text-xs text-gray-500 mb-1">Zones déjà adressées :</p>
-                        <div id="zonesList"></div>
-                    </div>
-                </div>
+                <p class="text-xs text-gray-500 mt-3 mb-1">Zones existantes :</p>
+                <div id="zonesList" class="flex flex-wrap gap-1"></div>
             </div>
         </div>
+
     </div>
 
-    {{-- 2️⃣ CHOIX DE LA ZONE --}}
-    <div class="glass-card" id="zoneCard" style="display:none;">
-        <h2 class="font-bold text-xl mb-4">2️⃣ Zone de destination</h2>
+    {{-- 2 — CHOIX ZONE --}}
+    <div class="card" id="zoneCard" style="display:none;">
+        <h2>2. Zone de destination</h2>
 
         <div class="relative">
             <label class="label">Zone</label>
-            <input id="zoneInput"
-                   type="text"
-                   class="input-secondary"
-                   placeholder="Ex : A1-2"
-                   autocomplete="off">
+            <input type="text" id="zoneInput" class="input" placeholder="Ex : A1-2" autocomplete="off">
 
-            <div id="zoneSuggestions" class="suggestions-dropdown"></div>
+            <div class="suggestions" id="zoneSuggestions"></div>
         </div>
-
-        <button id="validateZoneBtn" class="btn btn-blue mt-3">
-            Valider la zone
-        </button>
 
         <div id="zoneStatus"></div>
     </div>
 
-    {{-- 3️⃣ DÉPÔT --}}
-    <div class="glass-card" id="depositCard" style="display:none;">
-        <h2 class="font-bold text-xl mb-4">3️⃣ Dépôt de marchandise</h2>
+    {{-- 3 — DEPOT --}}
+    <div class="card" id="depositCard" style="display:none;">
+        <h2>3. Dépôt de marchandise</h2>
 
-        <div class="status-info mb-3">
-            Zone sélectionnée :
-            <span id="selectedZone" class="zone-badge"></span>
-        </div>
+        <p>Zone sélectionnée : <span id="selectedZone" class="zone-badge"></span></p>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <div class="md:col-span-1">
-                <label class="label">Quantité à déposer</label>
-                <input id="qtyInput"
-                       type="number"
-                       value="1"
-                       min="1"
-                       class="input-secondary">
-            </div>
+        <label class="label mt-3">Quantité</label>
+        <input type="number" id="qtyInput" value="1" min="1" class="input">
 
-            <div class="md:col-span-2">
-                <button id="depositBtn" class="btn btn-green">
-                    Confirmer le dépôt
-                </button>
-            </div>
-        </div>
+        <button class="btn-confirm mt-4" id="depositBtn">Confirmer le dépôt</button>
 
         <div id="depositStatus"></div>
     </div>
 
 </div>
 
+
+
+{{-- =============================== --}}
+{{-- SCRIPTS --}}
+{{-- =============================== --}}
+
 @push('scripts')
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded",()=>{
 
     const API = "{{ url('/api') }}";
-    const csrfToken = document.querySelector('meta[name="csrf-token']")?.content || '';
-
-    // DOM
-    const refInput       = document.getElementById("refInput");
-    const searchBtn      = document.getElementById("searchBtn");
-    const articleStatus  = document.getElementById("articleStatus");
-    const articleCard    = document.getElementById("articleCard");
-    const articleName    = document.getElementById("articleName");
-    const articleRef     = document.getElementById("articleRef");
-    const articleStock   = document.getElementById("articleStock");
-    const articleImage   = document.getElementById("articleImage");
-    const zonesList      = document.getElementById("zonesList");
-
-    const zoneCard       = document.getElementById("zoneCard");
-    const zoneInput      = document.getElementById("zoneInput");
-    const zoneSuggestions= document.getElementById("zoneSuggestions");
-    const validateZoneBtn= document.getElementById("validateZoneBtn");
-    const zoneStatus     = document.getElementById("zoneStatus");
-
-    const depositCard    = document.getElementById("depositCard");
-    const selectedZone   = document.getElementById("selectedZone");
-    const qtyInput       = document.getElementById("qtyInput");
-    const depositBtn     = document.getElementById("depositBtn");
-    const depositStatus  = document.getElementById("depositStatus");
+    const csrf = document.querySelector('meta[name="csrf-token"]').content;
 
     let currentArticle = null;
 
-    function clearMessages() {
-        articleStatus.innerHTML = "";
-        zoneStatus.innerHTML = "";
-        depositStatus.innerHTML = "";
-    }
+    // DOM
+    const refInput = document.getElementById("refInput");
+    const articleBlock = document.getElementById("articleBlock");
+    const articleStatus = document.getElementById("articleStatus");
+    const articleName = document.getElementById("articleName");
+    const articleRef = document.getElementById("articleRef");
+    const articleStock = document.getElementById("articleStock");
+    const articleImage = document.getElementById("articleImage");
+    const zonesList = document.getElementById("zonesList");
 
-    /* ========================
-       1️⃣ RECHERCHE ARTICLE
-       ======================== */
-    async function fetchArticle() {
-        clearMessages();
-        const ref = refInput.value.trim();
+    const zoneCard = document.getElementById("zoneCard");
+    const zoneInput = document.getElementById("zoneInput");
+    const zoneSuggestions = document.getElementById("zoneSuggestions");
+    const zoneStatus = document.getElementById("zoneStatus");
 
-        if (ref.length < 3) {
-            articleStatus.innerHTML = `<div class="status-error">Saisis au moins 3 caractères.</div>`;
-            return;
-        }
+    const depositCard = document.getElementById("depositCard");
+    const selectedZone = document.getElementById("selectedZone");
+    const qtyInput = document.getElementById("qtyInput");
+    const depositBtn = document.getElementById("depositBtn");
+    const depositStatus = document.getElementById("depositStatus");
 
-        articleCard.style.display  = "none";
-        zoneCard.style.display     = "none";
-        depositCard.style.display  = "none";
-        currentArticle             = null;
 
-        try {
-            const res  = await fetch(`${API}/article/search/${encodeURIComponent(ref)}`);
+
+    /* -------------------------
+       1) Recherche automatique
+       ------------------------- */
+    let timer;
+    refInput.addEventListener("input", ()=>{
+
+        clearTimeout(timer);
+
+        timer = setTimeout(async()=>{
+
+            const ref = refInput.value.trim();
+            if (ref.length < 3) return;
+
+            articleStatus.innerHTML = "";
+            articleBlock.style.display = "none";
+            zoneCard.style.display = "none";
+            depositCard.style.display = "none";
+
+            const res = await fetch(`${API}/article/search/${ref}`);
             const data = await res.json();
 
-            if (!res.ok) {
-                throw new Error(data.error || "Erreur lors de la recherche de l'article.");
+            if(!res.ok){
+                articleStatus.innerHTML = `<div class="status status-error">${data.error}</div>`;
+                return;
             }
 
             currentArticle = data;
 
-            // Infos produit
-            articleName.textContent  = data.designation;
-            articleRef.textContent   = data.reference;
-            articleStock.textContent = data.stock_total ?? data.stock ?? 'N/A';
-            articleImage.src         = data.image || "{{ asset('images/default.jpg') }}";
+            // populate UI
+            articleName.textContent = data.designation;
+            articleRef.textContent = data.reference;
+            articleStock.textContent = data.stock_total ?? data.stock;
+            articleImage.src = data.image;
 
-            // Zones existantes
-            let html = "";
-            if (!data.zones || data.zones.length === 0) {
-                html = `<span class="text-xs text-gray-400">Aucune zone encore adressée.</span>`;
-            } else {
-                data.zones.forEach(z => {
-                    html += `<span class="badge-zone-existing">${z.zone} · ${z.stock}</span>`;
-                });
-            }
-            zonesList.innerHTML = html;
+            zonesList.innerHTML = "";
+            (data.zones ?? []).forEach(z=>{
+                zonesList.innerHTML += `<span class="zone-badge">${z.zone}</span>`;
+            });
 
-            articleCard.style.display = "flex";
-            zoneCard.style.display    = "block";
+            articleBlock.style.display = "flex";
+            zoneCard.style.display = "block";
 
-        } catch (err) {
-            articleStatus.innerHTML = `<div class="status-error">${err.message}</div>`;
-        }
-    }
-
-    searchBtn.addEventListener("click", fetchArticle);
-    refInput.addEventListener("keyup", (e) => {
-        if (e.key === 'Enter') {
-            fetchArticle();
-        }
+        }, 400);
     });
 
-    /* ========================
-       2️⃣ AUTO-COMPLÉTION ZONE
-       ======================== */
-    zoneInput.addEventListener("input", async () => {
+
+
+    /* ----------------------------------
+       2) Auto-complétion zone + validation automatique
+       ---------------------------------- */
+    zoneInput.addEventListener("input", async ()=>{
+
         const q = zoneInput.value.trim().toUpperCase();
-        zoneSuggestions.style.display = "none";
+        if (q.length < 1){
+            zoneSuggestions.style.display = "none";
+            return;
+        }
+
+        const res = await fetch(`${API}/adresse/search/${q}`);
+        const data = await res.json();
+
+        if(!res.ok || !Array.isArray(data)){
+            zoneSuggestions.style.display = "none";
+            return;
+        }
+
         zoneSuggestions.innerHTML = "";
+        data.forEach(z=>{
+            zoneSuggestions.innerHTML += `<div>${z.zone}</div>`;
+        });
 
-        if (q.length < 2) return;
-        try {
-            const res  = await fetch(`${API}/adresse/search/${encodeURIComponent(q)}`);
-            const data = await res.json();
-            if (!res.ok) return;
-
-            if (!Array.isArray(data) || data.length === 0) {
-                return;
-            }
-
-            zoneSuggestions.innerHTML = data.map(z =>
-                `<div class="suggestion-item">${z.zone}</div>`
-            ).join("");
-
-            zoneSuggestions.style.display = "block";
-        } catch (e) {
-            // on ignore silencieusement
-        }
+        zoneSuggestions.style.display = "block";
     });
 
-    zoneSuggestions.addEventListener("click", (e) => {
-        if (e.target.classList.contains("suggestion-item")) {
-            zoneInput.value = e.target.textContent;
-            zoneSuggestions.style.display = "none";
-        }
-    });
+    // Sélection d’une zone → validation automatique
+    zoneSuggestions.addEventListener("click", async (e)=>{
 
-    document.addEventListener("click", (e) => {
-        if (!zoneSuggestions.contains(e.target) && e.target !== zoneInput) {
-            zoneSuggestions.style.display = "none";
-        }
-    });
+        const zone = e.target.textContent;
+        zoneInput.value = zone;
+        zoneSuggestions.style.display = "none";
 
-    /* ========================
-       2️⃣ VALIDATION ZONE
-       ======================== */
-    validateZoneBtn.addEventListener("click", async () => {
-        clearMessages();
+        zoneStatus.innerHTML = "";
 
-        if (!currentArticle) {
-            zoneStatus.innerHTML = `<div class="status-error">Commence par rechercher un article.</div>`;
+        const res = await fetch(`${API}/stockage/adresser`,{
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json",
+                "X-CSRF-TOKEN":csrf
+            },
+            body:JSON.stringify({
+                reference: currentArticle.reference,
+                zone: zone
+            })
+        });
+
+        const data = await res.json();
+
+        if(!res.ok){
+            zoneStatus.innerHTML = `<div class="status status-error">${data.error}</div>`;
             return;
         }
 
-        const zone = zoneInput.value.trim().toUpperCase();
-        if (!zone) {
-            zoneStatus.innerHTML = `<div class="status-error">Saisis une zone.</div>`;
-            return;
-        }
-
-        try {
-            const res  = await fetch(`${API}/stockage/adresser`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...(csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {})
-                },
-                body: JSON.stringify({
-                    reference: currentArticle.reference,
-                    zone: zone
-                })
-            });
-
-            const data = await res.json();
-            if (!res.ok) {
-                const msg = data.error || 'Erreur lors de la validation de la zone.';
-                throw new Error(msg);
-            }
-
-            zoneStatus.innerHTML = `<div class="status-success">${data.message || 'Zone validée.'}</div>`;
-            selectedZone.textContent = zone;
-            depositCard.style.display = "block";
-
-        } catch (err) {
-            zoneStatus.innerHTML = `<div class="status-error">${err.message}</div>`;
-        }
+        zoneStatus.innerHTML = `<div class="status status-success">Zone validée</div>`;
+        selectedZone.textContent = zone;
+        depositCard.style.display = "block";
     });
 
-    /* ========================
-       3️⃣ DÉPÔT
-       ======================== */
-    depositBtn.addEventListener("click", async () => {
-        clearMessages();
 
-        if (!currentArticle) {
-            depositStatus.innerHTML = `<div class="status-error">Aucun article chargé.</div>`;
+
+    /* -----------------------
+       3) Dépôt marchandises
+       ----------------------- */
+    depositBtn.addEventListener("click", async ()=>{
+
+        const qty = parseInt(qtyInput.value);
+
+        const res = await fetch(`${API}/stockage/miseAJourStock`,{
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json",
+                "X-CSRF-TOKEN": csrf
+            },
+            body:JSON.stringify({
+                reference: currentArticle.reference,
+                zone: selectedZone.textContent,
+                quantite: qty
+            })
+        });
+
+        const data = await res.json();
+
+        if(!res.ok){
+            depositStatus.innerHTML = `<div class="status status-error">${data.error}</div>`;
             return;
         }
 
-        const zone = selectedZone.textContent.trim();
-        if (!zone) {
-            depositStatus.innerHTML = `<div class="status-error">Aucune zone sélectionnée.</div>`;
-            return;
-        }
+        depositStatus.innerHTML = `
+            <div class="status status-success">
+                ${qty} unité(s) déposées.<br>
+                Nouveau stock total : ${data.stock_total_article}
+            </div>
+        `;
 
-        const qty = parseInt(qtyInput.value, 10);
-        if (isNaN(qty) || qty < 1) {
-            depositStatus.innerHTML = `<div class="status-error">Quantité invalide.</div>`;
-            return;
-        }
-
-        try {
-            const res  = await fetch(`${API}/stockage/miseAJourStock`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...(csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {})
-                },
-                body: JSON.stringify({
-                    reference: currentArticle.reference,
-                    zone: zone,
-                    quantite: qty
-                })
-            });
-
-            const data = await res.json();
-            if (!res.ok) {
-                const msg = data.error || 'Erreur lors de la mise à jour du stock.';
-                throw new Error(msg);
-            }
-
-            depositStatus.innerHTML = `
-                <div class="status-success">
-                    Déposé : <strong>${qty}</strong> unité(s) dans <strong>${zone}</strong>.<br>
-                    Nouveau stock total article : <strong>${data.stock_total_article ?? 'N/A'}</strong>
-                </div>
-            `;
-
-            // reset quantité mais on garde l'article chargé
-            qtyInput.value = 1;
-
-        } catch (err) {
-            depositStatus.innerHTML = `<div class="status-error">${err.message}</div>`;
-        }
+        qtyInput.value = 1;
     });
+
 });
 </script>
 @endpush
