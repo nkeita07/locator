@@ -12,161 +12,107 @@ use App\Models\Adresser;
 
 class StockageController extends Controller
 {
-    /**
-     * Vérifie que l'utilisateur est logisticien ou admin.
-     */
     private function authorizeLogisticien(Request $request)
     {
         $user = $request->user();
 
-        if (!$user || !$user->roles()->whereIn('libelle', ['admin', 'logisticien'])->exists()) {
+        if (!$user->roles()->whereIn('libelle', ['admin', 'logisticien'])->exists()) {
             abort(403, "Vous n'avez pas les permissions pour effectuer cette opération.");
         }
     }
 
     /**
-     * Validation de la zone + existence de l'article
-     * (ne touche PAS au stock)
+     * Validation de zone (étape 2)
+     * NE DOIT PAS EXIGER la quantité.
      */
     public function adresserArticle(Request $request): JsonResponse
     {
         $this->authorizeLogisticien($request);
 
-        try {
-            $data = $request->validate([
-                'reference' => 'required|string|max:100',
-                'zone'      => 'required|string|max:100',
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json(['error' => $e->errors()], 422);
-        }
+        $request->validate([
+            'reference' => 'required|string',
+            'zone'      => 'required|string',
+        ]);
 
-        // ARTICLE
-        $article = Article::where('reference', $data['reference'])->first();
+        $article = Article::where('reference', $request->reference)->first();
         if (!$article) {
             return response()->json(['error' => "Article non trouvé."], 404);
         }
 
-        // ZONE
-        $adresse = Adresse::where('zone', $data['zone'])->first();
+        $adresse = Adresse::where('zone', $request->zone)->first();
         if (!$adresse) {
-            return response()->json(['error' => "Zone de stock inconnue."], 404);
+            return response()->json(['error' => "Zone inconnue."], 404);
         }
 
         return response()->json([
             'success' => true,
+            'message' => "Zone validée.",
             'article' => $article,
-            'adresse' => $adresse,
-            'message' => "Adresse valide pour l'article.",
+            'adresse' => $adresse
         ], 200);
     }
 
     /**
-     * Mise à jour du stock d'un article sur une zone.
-     *
-     * Règles:
-     * - On NE modifie PAS article.stock (stock global ERP).
-     * - La somme des stocks adressés (toutes zones) NE DOIT PAS
-     *   dépasser article.stock.
+     * Mise à jour du stock : + ou - 
      */
     public function miseAJourStock(Request $request): JsonResponse
     {
         $this->authorizeLogisticien($request);
 
-        try {
-            $data = $request->validate([
-                'reference' => 'required|string|max:100',
-                'zone'      => 'required|string|max:100',
-                'quantite'  => 'required|integer|min:1',
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
-        }
+        $request->validate([
+            'reference' => 'required|string',
+            'zone'      => 'required|string',
+            'quantite'  => 'required|integer', // IMPORTANT : PLUS DE min:1
+        ]);
 
         DB::beginTransaction();
 
         try {
-            // 1. Article + lock pour éviter les race conditions
-            $article = Article::where('reference', $data['reference'])
-                ->lockForUpdate()
-                ->first();
+            $article = Article::where('reference', $request->reference)
+                              ->lockForUpdate()
+                              ->first();
 
             if (!$article) {
-                DB::rollBack();
                 return response()->json(['error' => "Article non trouvé."], 404);
             }
 
-            // 2. Adresse
-            $adresse = Adresse::where('zone', $data['zone'])->first();
+            $adresse = Adresse::where('zone', $request->zone)->first();
             if (!$adresse) {
-                DB::rollBack();
                 return response()->json(['error' => "Zone non trouvée."], 404);
             }
 
-            // 3. Adressage (ligne zone ↔ article)
+            // Trouver ou créer l’adressage
             $adressage = Adresser::firstOrCreate(
                 ['id_article' => $article->id_article, 'id_adresse' => $adresse->id_adresse],
                 ['stock' => 0]
             );
 
-            // 4. Total déjà adressé sur TOUTES les zones
-            $totalDejaAdresse = Adresser::where('id_article', $article->id_article)->sum('stock');
+            $nouveauStockZone = $adressage->stock + $request->quantite;
 
-            // Stock global théorique (table article)
-            $stockGlobal = (int) $article->stock;
-
-            // Stock encore disponible à adresser
-            $stockDisponible = $stockGlobal - $totalDejaAdresse;
-
-            if ($stockDisponible <= 0) {
-                DB::rollBack();
-                return response()->json([
-                    'error'   => "Aucun stock disponible à adresser pour cet article.",
-                    'details' => [
-                        'stock_article'     => $stockGlobal,
-                        'deja_adresse'      => $totalDejaAdresse,
-                        'reste_disponible'  => 0,
-                    ],
-                ], 422);
+            if ($nouveauStockZone < 0) {
+                return response()->json(['error' => "Stock insuffisant dans cette zone."], 422);
             }
 
-            // 5. Vérifier que la quantité demandée ne dépasse pas le disponible
-            if ($data['quantite'] > $stockDisponible) {
-                DB::rollBack();
-                return response()->json([
-                    'error'   => "Quantité supérieure au stock disponible.",
-                    'details' => [
-                        'stock_article'     => $stockGlobal,
-                        'deja_adresse'      => $totalDejaAdresse,
-                        'reste_disponible'  => $stockDisponible,
-                        'quantite_demandee' => $data['quantite'],
-                    ],
-                ], 422);
+            // Nouveau stock total adressé
+            $totalActuel = Adresser::where('id_article', $article->id_article)->sum('stock');
+            $totalApres = $totalActuel + $request->quantite;
+
+            if ($totalApres > $article->stock) {
+                return response()->json(['error' => "Impossible : dépassement du stock global de l’article."], 422);
             }
 
-            // 6. Mise à jour DU STOCK ZONE UNIQUEMENT
-            $adressage->stock += $data['quantite'];
+            // Mise à jour de la zone
+            $adressage->stock = $nouveauStockZone;
             $adressage->date_update = now();
             $adressage->save();
-
-            // Nouveau total adressé après l'opération
-            $nouveauTotalAdresse = $totalDejaAdresse + $data['quantite'];
-            $resteApres = $stockGlobal - $nouveauTotalAdresse;
-
-            // ⛔️ ON NE TOUCHE PAS A $article->stock !!
-            // $article->stock reste le stock global réel.
 
             DB::commit();
 
             return response()->json([
-                'success'               => true,
-                'message'               => "Stock adressé avec succès.",
-                'zone'                  => $adresse->zone,
-                'zone_stock'            => $adressage->stock,
-                'stock_article'         => $stockGlobal,
-                'stock_total_adresse'   => $nouveauTotalAdresse,
-                'stock_restant_a_adresser' => $resteApres,
-            ], 200);
+                'success'  => true,
+                'message'  => "Stock mis à jour.",
+                'zone_stock' => $adressage->stock,
+            ]);
 
         } catch (\Exception $e) {
             DB::rollBack();

@@ -11,6 +11,7 @@
     --gray-light: #F7F7F9;
 }
 
+/* Layout général */
 .wrapper-adresser {
     max-width: 980px;
     margin: 0 auto;
@@ -32,6 +33,7 @@
     margin-bottom: 1rem;
 }
 
+/* Inputs */
 .input {
     width: 100%;
     padding: .9rem .8rem;
@@ -50,14 +52,16 @@
     color: #555;
 }
 
+/* Image produit */
 #articleImage {
-    width: 100px;
-    height: 100px;
+    width: 110px;
+    height: 110px;
     border-radius: 12px;
     object-fit: cover;
     flex-shrink: 0;
 }
 
+/* Badges & status */
 .zone-badge {
     background: var(--blue);
     padding: .35rem .7rem;
@@ -67,6 +71,16 @@
     font-weight: bold;
 }
 
+.status {
+    margin-top: .7rem;
+    padding: .8rem;
+    border-radius: 10px;
+    font-weight: 600;
+}
+.status-success { background: #D1FAE5; color:#065F46; }
+.status-error   { background: #FEE2E2; color:#9B1C1C; }
+
+/* Autocomplétion zone */
 .suggestions {
     position: absolute;
     background: white;
@@ -85,15 +99,7 @@
     background: #EEF1FF;
 }
 
-.status {
-    margin-top: .7rem;
-    padding: .8rem;
-    border-radius: 10px;
-    font-weight: 600;
-}
-.status-success { background: #D1FAE5; color:#065F46; }
-.status-error { background: #FEE2E2; color:#9B1C1C; }
-
+/* Bouton confirmation dépôt */
 .btn-confirm {
     background: var(--green);
     color: white;
@@ -106,6 +112,73 @@
 }
 .btn-confirm:hover { background:#00A476; }
 
+/* Lignes des zones existantes */
+.zone-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--gray-light);
+    padding: .6rem .9rem;
+    border-radius: 10px;
+    margin-bottom: .4rem;
+}
+.zone-info {
+    font-size: .9rem;
+}
+.zone-info span.zone-name {
+    font-weight: 700;
+}
+.zone-actions {
+    display: flex;
+    gap: .3rem;
+}
+.zone-actions .btn-zone {
+    background: var(--blue);
+    color: white;
+    font-size: 20px;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}
+
+/* Modal (+ / -) */
+.modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 60;
+}
+.modal-box {
+    background: white;
+    width: 380px;
+    max-width: 95%;
+    padding: 1.8rem;
+    border-radius: 12px;
+}
+.modal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: .4rem;
+}
+.modal-sub {
+    font-size: .9rem;
+    color: #6B7280;
+    margin-bottom: 1rem;
+}
+.modal-btn {
+    padding: .7rem 1.2rem;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-cancel { background:#E5E7EB; }
+.btn-ok     { background:var(--green); color:white; }
 </style>
 
 <div class="wrapper-adresser">
@@ -132,10 +205,10 @@
                 </p>
 
                 <p class="text-xs text-gray-500 mt-3 mb-1">Zones existantes :</p>
-                <div id="zonesList" class="flex flex-wrap gap-1"></div>
+                {{-- ICI on affiche les zones en liste avec + / - --}}
+                <div id="zonesList"></div>
             </div>
         </div>
-
     </div>
 
     {{-- 2 — CHOIX ZONE --}}
@@ -145,7 +218,6 @@
         <div class="relative">
             <label class="label">Zone</label>
             <input type="text" id="zoneInput" class="input" placeholder="Ex : A1-2" autocomplete="off">
-
             <div class="suggestions" id="zoneSuggestions"></div>
         </div>
 
@@ -168,188 +240,323 @@
 
 </div>
 
+{{-- MODAL POUR + / - SUR UNE ZONE --}}
+<div id="stockModal" class="modal-bg">
+    <div class="modal-box">
+        <div class="modal-title" id="modalTitle"></div>
+        <div class="modal-sub" id="modalProduct"></div>
 
+        <label class="label">Quantité</label>
+        <input type="number" id="modalQty" value="1" min="1" class="input mb-4">
+
+        <div class="flex justify-between mt-2">
+            <button type="button" id="modalCancel" class="modal-btn btn-cancel">Annuler</button>
+            <button type="button" id="modalConfirm" class="modal-btn btn-ok">Valider</button>
+        </div>
+    </div>
+</div>
 
 {{-- =============================== --}}
 {{-- SCRIPTS --}}
 {{-- =============================== --}}
-
 @push('scripts')
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded", () => {
 
-    const API = "{{ url('/api') }}";
+    const API  = "{{ url('/api') }}";
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
 
     let currentArticle = null;
 
     // DOM
-    const refInput = document.getElementById("refInput");
-    const articleBlock = document.getElementById("articleBlock");
-    const articleStatus = document.getElementById("articleStatus");
-    const articleName = document.getElementById("articleName");
-    const articleRef = document.getElementById("articleRef");
-    const articleStock = document.getElementById("articleStock");
-    const articleImage = document.getElementById("articleImage");
-    const zonesList = document.getElementById("zonesList");
+    const refInput       = document.getElementById("refInput");
+    const articleStatus  = document.getElementById("articleStatus");
+    const articleBlock   = document.getElementById("articleBlock");
+    const articleName    = document.getElementById("articleName");
+    const articleRef     = document.getElementById("articleRef");
+    const articleStock   = document.getElementById("articleStock");
+    const articleImage   = document.getElementById("articleImage");
+    const zonesList      = document.getElementById("zonesList");
 
-    const zoneCard = document.getElementById("zoneCard");
-    const zoneInput = document.getElementById("zoneInput");
-    const zoneSuggestions = document.getElementById("zoneSuggestions");
-    const zoneStatus = document.getElementById("zoneStatus");
+    const zoneCard       = document.getElementById("zoneCard");
+    const zoneInput      = document.getElementById("zoneInput");
+    const zoneSuggestions= document.getElementById("zoneSuggestions");
+    const zoneStatus     = document.getElementById("zoneStatus");
 
-    const depositCard = document.getElementById("depositCard");
-    const selectedZone = document.getElementById("selectedZone");
-    const qtyInput = document.getElementById("qtyInput");
-    const depositBtn = document.getElementById("depositBtn");
-    const depositStatus = document.getElementById("depositStatus");
+    const depositCard    = document.getElementById("depositCard");
+    const selectedZone   = document.getElementById("selectedZone");
+    const qtyInput       = document.getElementById("qtyInput");
+    const depositBtn     = document.getElementById("depositBtn");
+    const depositStatus  = document.getElementById("depositStatus");
 
+    // Modal
+    const modal          = document.getElementById("stockModal");
+    const modalTitle     = document.getElementById("modalTitle");
+    const modalProduct   = document.getElementById("modalProduct");
+    const modalQty       = document.getElementById("modalQty");
+    const modalCancel    = document.getElementById("modalCancel");
+    const modalConfirm   = document.getElementById("modalConfirm");
+    let modalZone = null;
+    let modalMode = null; // "add" ou "remove"
 
+    function clearStatuses() {
+        articleStatus.innerHTML = "";
+        zoneStatus.innerHTML = "";
+        depositStatus.innerHTML = "";
+    }
 
-    /* -------------------------
-       1) Recherche automatique
-       ------------------------- */
+    /* =======================
+       1) RECHERCHE ARTICLE
+       ======================= */
     let timer;
-    refInput.addEventListener("input", ()=>{
-
+    refInput.addEventListener("input", () => {
         clearTimeout(timer);
+        timer = setTimeout(fetchArticle, 400);
+    });
 
-        timer = setTimeout(async()=>{
+    async function fetchArticle() {
+        clearStatuses();
+        const ref = refInput.value.trim();
+        if (ref.length < 3) return;
 
-            const ref = refInput.value.trim();
-            if (ref.length < 3) return;
+        articleBlock.style.display = "none";
+        zoneCard.style.display = "none";
+        depositCard.style.display = "none";
+        currentArticle = null;
 
-            articleStatus.innerHTML = "";
-            articleBlock.style.display = "none";
-            zoneCard.style.display = "none";
-            depositCard.style.display = "none";
-
-            const res = await fetch(`${API}/article/search/${ref}`);
+        try {
+            const res  = await fetch(`${API}/article/search/${encodeURIComponent(ref)}`);
             const data = await res.json();
 
-            if(!res.ok){
-                articleStatus.innerHTML = `<div class="status status-error">${data.error}</div>`;
+            if (!res.ok) {
+                const msg = data.error || "Erreur lors de la recherche.";
+                articleStatus.innerHTML = `<div class="status status-error">${msg}</div>`;
                 return;
             }
 
             currentArticle = data;
 
-            // populate UI
-            articleName.textContent = data.designation;
-            articleRef.textContent = data.reference;
-            articleStock.textContent = data.stock_total ?? data.stock;
-            articleImage.src = data.image;
+            articleName.textContent  = data.designation;
+            articleRef.textContent   = data.reference;
+            articleStock.textContent = data.stock_total ?? data.stock ?? 'N/A';
+            articleImage.src         = data.image || "{{ asset('images/default.jpg') }}";
 
-            zonesList.innerHTML = "";
-            (data.zones ?? []).forEach(z=>{
-                zonesList.innerHTML += `<span class="zone-badge">${z.zone}</span>`;
-            });
+            // Affichage des zones existantes avec boutons + / -
+            const zones = data.zones || [];
+            if (zones.length === 0) {
+                zonesList.innerHTML = `<span class="text-xs text-gray-400">Aucune zone encore adressée.</span>`;
+            } else {
+                zonesList.innerHTML = zones.map(z => `
+                    <div class="zone-row">
+                        <div class="zone-info">
+                            <span class="zone-name">${z.zone}</span>
+                            <span class="text-xs text-gray-600"> · ${z.stock} unités</span>
+                        </div>
+                        <div class="zone-actions">
+                            <button type="button" class="btn-zone" data-mode="remove" data-zone="${z.zone}">–</button>
+                            <button type="button" class="btn-zone" data-mode="add" data-zone="${z.zone}">+</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
 
             articleBlock.style.display = "flex";
-            zoneCard.style.display = "block";
+            zoneCard.style.display    = "block";
 
-        }, 400);
-    });
+        } catch (e) {
+            articleStatus.innerHTML = `<div class="status status-error">Erreur réseau.</div>`;
+        }
+    }
 
-
-
-    /* ----------------------------------
-       2) Auto-complétion zone + validation automatique
-       ---------------------------------- */
-    zoneInput.addEventListener("input", async ()=>{
-
+    /* =======================
+       2) AUTO-COMPLÉTION ZONE
+       ======================= */
+    zoneInput.addEventListener("input", async () => {
         const q = zoneInput.value.trim().toUpperCase();
-        if (q.length < 1){
-            zoneSuggestions.style.display = "none";
-            return;
-        }
-
-        const res = await fetch(`${API}/adresse/search/${q}`);
-        const data = await res.json();
-
-        if(!res.ok || !Array.isArray(data)){
-            zoneSuggestions.style.display = "none";
-            return;
-        }
-
+        zoneSuggestions.style.display = "none";
         zoneSuggestions.innerHTML = "";
-        data.forEach(z=>{
-            zoneSuggestions.innerHTML += `<div>${z.zone}</div>`;
-        });
 
-        zoneSuggestions.style.display = "block";
+        if (q.length < 1) return;
+
+        try {
+            const res  = await fetch(`${API}/adresse/search/${encodeURIComponent(q)}`);
+            const data = await res.json();
+            if (!res.ok || !Array.isArray(data) || data.length === 0) return;
+
+            zoneSuggestions.innerHTML = data.map(z =>
+                `<div>${z.zone}</div>`
+            ).join("");
+            zoneSuggestions.style.display = "block";
+        } catch (e) {
+            // on ignore
+        }
     });
 
-    // Sélection d’une zone → validation automatique
-    zoneSuggestions.addEventListener("click", async (e)=>{
-
+    zoneSuggestions.addEventListener("click", async (e) => {
         const zone = e.target.textContent;
+        if (!zone) return;
+
         zoneInput.value = zone;
         zoneSuggestions.style.display = "none";
-
         zoneStatus.innerHTML = "";
 
-        const res = await fetch(`${API}/stockage/adresser`,{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json",
-                "X-CSRF-TOKEN":csrf
-            },
-            body:JSON.stringify({
-                reference: currentArticle.reference,
-                zone: zone
-            })
-        });
-
-        const data = await res.json();
-
-        if(!res.ok){
-            zoneStatus.innerHTML = `<div class="status status-error">${data.error}</div>`;
+        if (!currentArticle) {
+            zoneStatus.innerHTML = `<div class="status status-error">Commence par rechercher un article.</div>`;
             return;
         }
 
-        zoneStatus.innerHTML = `<div class="status status-success">Zone validée</div>`;
-        selectedZone.textContent = zone;
-        depositCard.style.display = "block";
+        try {
+            const res  = await fetch(`${API}/stockage/adresser`, {
+                method: "POST",
+                headers: {
+                    "Content-Type":"application/json",
+                    "X-CSRF-TOKEN": csrf
+                },
+                body: JSON.stringify({
+                    reference: currentArticle.reference,
+                    zone: zone
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                const msg = data.error || 'Erreur lors de la validation de la zone.';
+                zoneStatus.innerHTML = `<div class="status status-error">${msg}</div>`;
+                return;
+            }
+
+            zoneStatus.innerHTML = `<div class="status status-success">${data.message || 'Zone validée.'}</div>`;
+            selectedZone.textContent = zone;
+            depositCard.style.display = "block";
+        } catch (e) {
+            zoneStatus.innerHTML = `<div class="status status-error">Erreur réseau.</div>`;
+        }
     });
 
+    /* =======================
+       3) DÉPÔT CLASSIQUE
+       ======================= */
+    depositBtn.addEventListener("click", async () => {
+        clearStatuses();
 
-
-    /* -----------------------
-       3) Dépôt marchandises
-       ----------------------- */
-    depositBtn.addEventListener("click", async ()=>{
-
-        const qty = parseInt(qtyInput.value);
-
-        const res = await fetch(`${API}/stockage/miseAJourStock`,{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json",
-                "X-CSRF-TOKEN": csrf
-            },
-            body:JSON.stringify({
-                reference: currentArticle.reference,
-                zone: selectedZone.textContent,
-                quantite: qty
-            })
-        });
-
-        const data = await res.json();
-
-        if(!res.ok){
-            depositStatus.innerHTML = `<div class="status status-error">${data.error}</div>`;
+        if (!currentArticle) {
+            depositStatus.innerHTML = `<div class="status status-error">Aucun article chargé.</div>`;
             return;
         }
 
-        depositStatus.innerHTML = `
-            <div class="status status-success">
-                ${qty} unité(s) déposées.<br>
-                Nouveau stock total : ${data.stock_total_article}
-            </div>
-        `;
+        const zone = selectedZone.textContent.trim();
+        if (!zone) {
+            depositStatus.innerHTML = `<div class="status status-error">Aucune zone sélectionnée.</div>`;
+            return;
+        }
 
-        qtyInput.value = 1;
+        const qty = parseInt(qtyInput.value, 10);
+        if (isNaN(qty) || qty < 1) {
+            depositStatus.innerHTML = `<div class="status status-error">Quantité invalide.</div>`;
+            return;
+        }
+
+        try {
+            const res  = await fetch(`${API}/stockage/miseAJourStock`, {
+                method: "POST",
+                headers: {
+                    "Content-Type":"application/json",
+                    "X-CSRF-TOKEN": csrf
+                },
+                body: JSON.stringify({
+                    reference: currentArticle.reference,
+                    zone: zone,
+                    quantite: qty
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                const msg = data.error || 'Erreur lors de la mise à jour du stock.';
+                depositStatus.innerHTML = `<div class="status status-error">${msg}</div>`;
+                return;
+            }
+
+            depositStatus.innerHTML = `
+                <div class="status status-success">
+                    ${qty} unité(s) déposées dans <strong>${zone}</strong>.<br>
+                    Nouveau stock total article : <strong>${data.stock_total_article ?? 'N/A'}</strong>
+                </div>
+            `;
+
+            qtyInput.value = 1;
+            // on recharge l'article pour mettre à jour les zones
+            fetchArticle();
+
+        } catch (e) {
+            depositStatus.innerHTML = `<div class="status status-error">Erreur réseau.</div>`;
+        }
+    });
+
+    /* =======================
+       4) MODAL + / -
+       ======================= */
+
+    // Ouverture du modal quand on clique sur un bouton de zone
+    zonesList.addEventListener("click", (e) => {
+        const btn = e.target.closest(".btn-zone");
+        if (!btn || !currentArticle) return;
+
+        modalZone = btn.dataset.zone;
+        modalMode = btn.dataset.mode; // "add" ou "remove"
+        modalQty.value = 1;
+
+        modalTitle.textContent = modalMode === "add"
+            ? `Ajouter du stock dans ${modalZone}`
+            : `Retirer du stock de ${modalZone}`;
+
+        modalProduct.textContent = `${currentArticle.reference} — ${currentArticle.designation}`;
+        modal.style.display = "flex";
+    });
+
+    modalCancel.addEventListener("click", () => {
+        modal.style.display = "none";
+    });
+
+    modalConfirm.addEventListener("click", async () => {
+        if (!currentArticle || !modalZone || !modalMode) return;
+
+        const q = parseInt(modalQty.value, 10);
+        if (isNaN(q) || q < 1) return;
+
+        // NOTE : ici on envoie une quantité positive ou négative selon le mode.
+        // Il faut que ton contrôleur accepte les quantités négatives pour le retrait.
+        const quantite = (modalMode === "add") ? q : -q;
+
+        try {
+            const res  = await fetch(`${API}/stockage/miseAJourStock`, {
+                method: "POST",
+                headers: {
+                    "Content-Type":"application/json",
+                    "X-CSRF-TOKEN": csrf
+                },
+                body: JSON.stringify({
+                    reference: currentArticle.reference,
+                    zone: modalZone,
+                    quantite: quantite
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                const msg = data.error
+                    || (data.errors ? Object.values(data.errors).flat().join('<br>') : 'Erreur lors de la mise à jour.');
+                alert(msg);
+                return;
+            }
+
+            modal.style.display = "none";
+            // On rafraîchit les infos de l'article et des zones
+            fetchArticle();
+
+        } catch (e) {
+            alert("Erreur réseau lors de la mise à jour du stock.");
+        }
     });
 
 });
