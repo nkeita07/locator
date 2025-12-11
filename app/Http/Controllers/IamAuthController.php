@@ -120,6 +120,6 @@ class IamAuthController extends Controller
         Auth::login($collaborateur, true);
 
         // 6. Rediriger vers le tableau de bord (sortie de la boucle)
-        return redirect()->route('dashboard'); 
+        return redirect()->route('dashboard.home'); 
     }
 }

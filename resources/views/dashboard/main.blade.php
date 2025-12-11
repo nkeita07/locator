@@ -20,7 +20,7 @@
             overflow-x: hidden;
         }
 
-        /* ----- SIDEBAR ----- */
+        /* SIDEBAR */
         #sidebar {
             width: var(--sidebar-width);
             background: var(--blue);
@@ -34,18 +34,16 @@
             flex-direction: column;
             gap: 1.5rem;
             z-index: 50;
-            transform: translateX(0);
+            transform: translateX(-100%);
             transition: transform .3s ease;
         }
 
-        #sidebar.hidden {
-            transform: translateX(-100%);
+        #sidebar.open {
+            transform: translateX(0);
         }
 
         .sidebar-link {
-            display: flex;
-            align-items: center;
-            gap: .75rem;
+            display: block;
             padding: .65rem .75rem;
             background: rgba(255,255,255,0.10);
             border-radius: 8px;
@@ -54,6 +52,12 @@
 
         .sidebar-link:hover {
             background: rgba(255,255,255,0.18);
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            border-top: 1px solid rgba(255,255,255,0.25);
+            padding-top: 1rem;
         }
 
         /* HEADER */
@@ -100,12 +104,30 @@
 <body>
 
     <!-- SIDEBAR -->
-    <div id="sidebar" class="hidden md:block">
-        <h1 class="font-bold text-xl mb-4">{{ Auth::user()->matricule ?? 'USER' }}</h1>
+    <div id="sidebar">
 
-        <a href="{{ route('article.location') }}" class="sidebar-link">📦 Adresser un article</a>
-        <a href="{{ route('zones.index') }}" class="sidebar-link">📍 Zones</a>
-        <a href="{{ route('historique.index') }}" class="sidebar-link">📜 Historique</a>
+        {{-- Identité du user --}}
+        <div class="mb-4">
+            <h1 class="font-bold text-lg leading-tight">
+                {{ Auth::user()->collaborateur->feid ?? Auth::user()->matricule }}
+            </h1>
+            <p class="text-xs opacity-80">{{ Auth::user()->email }}</p>
+        </div>
+
+        {{-- Liens --}}
+        <a href="{{ route('dashboard.home') }}" class="sidebar-link">Accueil</a>
+        <a href="{{ route('article.location') }}" class="sidebar-link">Adresser un article</a>
+        <a href="{{ route('zones.index') }}" class="sidebar-link">Zones</a>
+        <a href="{{ route('historique.index') }}" class="sidebar-link">Historique</a>
+
+        {{-- FOOTER --}}
+        <div class="sidebar-footer">
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button class="sidebar-link w-full text-left">Déconnexion</button>
+            </form>
+        </div>
+
     </div>
 
     <!-- HEADER -->
@@ -121,10 +143,10 @@
 
     <script>
         const sidebar = document.getElementById('sidebar');
-        const toggle = document.getElementById('menu-toggle');
+        const toggle  = document.getElementById('menu-toggle');
 
         toggle.addEventListener('click', () => {
-            sidebar.classList.toggle('hidden');
+            sidebar.classList.toggle('open');
         });
     </script>
 

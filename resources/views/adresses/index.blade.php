@@ -25,13 +25,6 @@
     margin-bottom: 1.5rem;
 }
 
-.card h2 {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #1E1E2D;
-    margin-bottom: 1rem;
-}
-
 /* Inputs */
 .input {
     width: 100%;
@@ -41,10 +34,7 @@
     background: white;
     font-size: 1rem;
 }
-.input:focus {
-    outline: none;
-    border-color: var(--blue);
-}
+.input:focus { border-color: var(--blue); outline: none; }
 
 .label {
     font-size: .85rem;
@@ -56,6 +46,18 @@
 .article-infos {
     display: flex;
     gap: 15px;
+    align-items: flex-start;
+}
+
+/* Sur mobile : image au-dessus, zones en pleine largeur */
+@media (max-width: 768px) {
+    .article-infos {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    #articleImage {
+        align-self: center;
+    }
 }
 
 #articleImage {
@@ -65,19 +67,40 @@
     object-fit: cover;
 }
 
-/*** ZONES EXISTANTES (grille + centrage mobile) ***/
-#zonesList {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: .6rem;
+/*** BADGE ZONE SÉLECTIONNÉE ***/
+.zone-badge {
+    display: inline-block;
+    background: var(--blue);
+    color: #fff;
+    padding: .25rem .8rem;
+    border-radius: 9999px;
+    font-size: .85rem;
+    font-weight: 600;
+    margin-top: .25rem;
 }
 
-@media(max-width: 640px){
-    #zonesList {
-        grid-template-columns: 1fr;
+/*** ZONES EXISTANTES (conteneur dédié) ***/
+.zones-section {
+    margin-top: .35rem;
+    width: 100%;
+}
+
+/* Grille responsive */
+.zones-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* mobile : 1 zone par ligne */
+    gap: .6rem;
+    width: 100%;
+}
+
+/* Desktop / tablette : 2 zones par ligne */
+@media (min-width: 768px) {
+    .zones-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
+/* Chaque zone occupe toute la largeur de sa colonne */
 .zone-row {
     background: var(--gray-light);
     padding: .7rem .9rem;
@@ -85,6 +108,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
 }
 
 .zone-name {
@@ -122,9 +146,7 @@
     padding: .7rem .8rem;
     cursor: pointer;
 }
-.suggestions div:hover {
-    background: #EEF1FF;
-}
+.suggestions div:hover { background: #EEF1FF; }
 
 /*** STATUS MESSAGE ***/
 .status {
@@ -167,37 +189,49 @@
     padding: 1.8rem;
     border-radius: 14px;
 }
-.modal-title {
-    font-weight: 700;
-    font-size: 1.25rem;
-}
-.modal-sub {
-    font-size: .9rem;
-    color: #777;
-    margin-bottom: 1rem;
-}
-.modal-footer {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 1.5rem;
-}
+.modal-title { font-size: 1.25rem; font-weight: 700; }
+.modal-sub { font-size:.9rem; color:#777; margin-bottom:1rem; }
+
+.modal-footer { display:flex; justify-content:space-between; margin-top:1.5rem; }
+
 .modal-btn {
-    padding: .7rem 1.2rem;
-    border-radius: 8px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
+    padding:.7rem 1.2rem;
+    border-radius:8px;
+    font-weight:600;
+    border:none;
+    cursor:pointer;
 }
 .btn-cancel { background:#E5E7EB; }
-.btn-ok     { background:var(--green); color:white; }
+.btn-ok { background:var(--green); color:white; }
+
+/*** LOADER ***/
+#loader {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+.loader-spin {
+    width: 45px;
+    height: 45px;
+    border: 4px solid #d1d5db;
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 
+{{-- LOADER --}}
+<div id="loader"><div class="loader-spin"></div></div>
 
 <div class="wrapper-adresser">
 
-    {{-- 1 — RECHERCHE ARTICLE --}}
+    {{-- RECHERCHE ARTICLE --}}
     <div class="card">
-        <h2>1. Recherche de l'article</h2>
 
         <label class="label">Référence article</label>
         <input type="text" id="refInput" class="input" placeholder="Ex : 608629">
@@ -208,29 +242,33 @@
             <img id="articleImage" src="">
 
             <div style="flex:1">
+
                 <p class="text-sm text-gray-600">
                     Référence : <b id="articleRef"></b>
                 </p>
                 <p id="articleName" class="font-bold text-lg"></p>
 
-                <p class="text-sm text-gray-600">
-                    Stock total : <b id="articleStock"></b>
+                <p class="text-sm text-gray-600">Stock total :
+                    <b id="articleStock"></b>
                 </p>
 
-                <p class="text-sm text-gray-600">
-                    Stock adressé : <b id="articleStockAdr"></b>
+                <p class="text-sm text-gray-600">Stock adressé :
+                    <b id="articleStockAdr"></b>
                 </p>
 
                 <p class="text-xs text-gray-500 mt-3 mb-1">Zones existantes :</p>
-                <div id="zonesList"></div>
+
+                {{-- Conteneur dédié aux zones --}}
+                <div class="zones-section">
+                    <div id="zonesList" class="zones-grid"></div>
+                </div>
+
             </div>
         </div>
     </div>
 
-
-    {{-- 2 — ZONE --}}
+    {{-- ZONE --}}
     <div class="card" id="zoneCard" style="display:none;">
-        <h2>2. Zone de destination</h2>
 
         <label class="label">Zone</label>
         <div class="relative">
@@ -241,10 +279,8 @@
         <div id="zoneStatus"></div>
     </div>
 
-
-    {{-- 3 — DÉPÔT --}}
+    {{-- DÉPÔT --}}
     <div class="card" id="depositCard" style="display:none;">
-        <h2>3. Ajouter dans la zone</h2>
 
         <label class="label">Zone sélectionnée</label>
         <div class="zone-badge" id="selectedZone"></div>
@@ -260,7 +296,6 @@
     </div>
 
 </div>
-
 
 {{-- MODAL + / - --}}
 <div id="stockModal" class="modal-bg">
@@ -281,12 +316,14 @@
     </div>
 </div>
 
-
 @endsection
 
 
 @push('scripts')
 <script>
+function showLoader(){ document.getElementById("loader").style.display="flex"; }
+function hideLoader(){ document.getElementById("loader").style.display="none"; }
+
 document.addEventListener("DOMContentLoaded", () => {
 
     const API  = "{{ url('/api') }}";
@@ -341,17 +378,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     async function loadArticle() {
+
         const ref = refInput.value.trim();
         if (ref.length < 3) return;
 
-        articleStatus.innerHTML = "";
+        articleStatus.innerHTML = `<div class="status">Recherche en cours...</div>`;
         articleBlock.style.display = "none";
         zoneCard.style.display     = "none";
         depositCard.style.display  = "none";
 
+        showLoader();
+
         try {
             const res  = await fetch(`${API}/article/search/${ref}`);
             const data = await res.json();
+
+            hideLoader();
 
             if (!res.ok) {
                 articleStatus.innerHTML =
@@ -375,8 +417,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             articleBlock.style.display = "flex";
             zoneCard.style.display     = "block";
+            articleStatus.innerHTML = "";
 
         } catch (_) {
+            hideLoader();
             articleStatus.innerHTML = `<div class='status status-error'>Erreur réseau.</div>`;
         }
     }
@@ -386,10 +430,12 @@ document.addEventListener("DOMContentLoaded", () => {
        2) Affichage Zones existantes
     ======================================================= */
     function renderZones(zones){
+
         const filtered = zones.filter(z => z.stock > 0);
 
         if (filtered.length === 0){
-            zonesList.innerHTML = `<div class='text-gray-400 text-xs'>Aucune zone avec stock.</div>`;
+            zonesList.innerHTML =
+                `<div class='text-gray-400 text-xs'>Aucune zone avec stock.</div>`;
             return;
         }
 
@@ -425,10 +471,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            zoneSuggestions.innerHTML = data.map(z =>
-                `<div>${z.zone}</div>`
-            ).join("");
-
+            zoneSuggestions.innerHTML = data
+                .map(z => `<div>${z.zone}</div>`).join("");
             zoneSuggestions.style.display = "block";
 
         } catch (_) {}
@@ -440,6 +484,9 @@ document.addEventListener("DOMContentLoaded", () => {
         zoneSuggestions.style.display = "none";
 
         if (!currentArticle) return;
+
+        zoneStatus.innerHTML = `<div class='status'>Validation en cours...</div>`;
+        showLoader();
 
         const res = await fetch(`${API}/stockage/adresser`, {
             method:"POST",
@@ -454,6 +501,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         const data = await res.json();
+        hideLoader();
 
         if (!res.ok){
             zoneStatus.innerHTML =
@@ -474,8 +522,8 @@ document.addEventListener("DOMContentLoaded", () => {
        4) Dépôt classique (ADD)
     ======================================================= */
     depositBtn.addEventListener("click", async () => {
-        depositStatus.innerHTML = "";
 
+        depositStatus.innerHTML = "";
         const zone = selectedZone.textContent.trim();
         const qty  = parseInt(qtyInput.value);
 
@@ -484,6 +532,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 `<div class='status status-error'>Quantité invalide.</div>`;
             return;
         }
+
+        depositStatus.innerHTML = `<div class='status'>Mise à jour en cours...</div>`;
+        showLoader();
 
         const res = await fetch(`${API}/stockage/miseAJourStock`, {
             method:"POST",
@@ -499,6 +550,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         const data = await res.json();
+        hideLoader();
 
         if (!res.ok){
             depositStatus.innerHTML =
@@ -525,28 +577,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
         modalZone = btn.dataset.zone;
         modalMode = btn.dataset.mode;
+
         modalQty.value = 1;
         modalMessage.innerHTML = "";
 
         modalTitle.textContent =
             modalMode === "add" ? "Ajouter du stock" : "Retirer du stock";
 
-        modalProduct.textContent =
-            `Réf. ${currentArticle.reference} · Zone ${modalZone}`;
+        modalProduct.textContent = `Réf. ${currentArticle.reference} · Zone ${modalZone}`;
 
         modal.style.display = "flex";
     });
 
-    modalCancel.addEventListener("click", () => {
-        modal.style.display = "none";
-    });
-
+    modalCancel.addEventListener("click", () => modal.style.display = "none");
 
     modalConfirm.addEventListener("click", async () => {
+
         const qty = parseInt(modalQty.value);
         if (!qty || qty < 1) return;
 
         const quantite = (modalMode === "add") ? qty : -qty;
+
+        modalMessage.innerHTML = `<div class='status'>Mise à jour en cours...</div>`;
+        showLoader();
 
         const res = await fetch(`${API}/stockage/miseAJourStock`, {
             method:"POST",
@@ -562,6 +615,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         const data = await res.json();
+        hideLoader();
 
         if (!res.ok){
             modalMessage.innerHTML =
