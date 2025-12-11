@@ -11,18 +11,62 @@ use Illuminate\Support\Facades\Log;
 class ArticleController extends Controller
 {
     /**
-     * Recherche complète d'un article :
-     * - référence exacte
-     * - retourne id, designation, image, stock total
-     * - retourne ses emplacements (zones + stock)
+     * ----------------------------------------------------------------------
+     *  AUTOCOMPLÉTION
+     *  Recherche par référence OU désignation — renvoie 10 résultats max
+     * ----------------------------------------------------------------------
      */
-    public function searchDesignationByReference(string $reference): JsonResponse
+    public function autocomplete(string $query): JsonResponse
     {
-        $cleanedReference = trim($reference);
-
         try {
-            // 🎯 1. Recherche exacte obligatoire
-            $article = Article::where('reference', $cleanedReference)->first();
+            $search = trim($query);
+
+            if (strlen($search) < 2) {
+                return response()->json([]);
+            }
+
+            $articles = Article::where('reference', 'LIKE', "%{$search}%")
+                ->orWhere('designation', 'LIKE', "%{$search}%")
+                ->select('reference', 'designation', 'image')
+                ->limit(10)
+                ->get()
+                ->map(function ($a) {
+                    return [
+                        'reference'   => $a->reference,
+                        'designation' => $a->designation,
+                        'image'       => $a->image ?: asset('images/default.jpg'),
+                    ];
+                });
+
+            return response()->json($articles);
+
+        } catch (\Exception $e) {
+            Log::error("Erreur autocomplete : " . $e->getMessage());
+            return response()->json([], 500);
+        }
+    }
+
+
+    /**
+     * ----------------------------------------------------------------------
+     *  RECHERCHE PRINCIPALE
+     *  Recherche par :
+     *  - Référence exacte
+     *  - Sinon par désignation partielle
+     * ----------------------------------------------------------------------
+     */
+    public function search(string $query): JsonResponse
+    {
+        try {
+            $clean = trim($query);
+
+            // 1) Recherche exacte sur la référence
+            $article = Article::where('reference', $clean)->first();
+
+            // 2) Sinon recherche sur la désignation
+            if (!$article) {
+                $article = Article::where('designation', 'LIKE', "%{$clean}%")->first();
+            }
 
             if (!$article) {
                 return response()->json([
@@ -30,25 +74,27 @@ class ArticleController extends Controller
                 ], 404);
             }
 
-            // 🎯 2. Récupérer les zones déjà adressées
+            // 3) Stock adressé par zone
             $zones = Adresser::where('id_article', $article->id_article)
                 ->join('adresse', 'adresse.id_adresse', '=', 'adresser.id_adresse')
                 ->select('adresse.zone', 'adresser.stock')
                 ->orderBy('adresse.zone')
                 ->get();
 
-            // 🎯 3. Formatage de la réponse
+            // 4) Image fallback automatique
+            $image = $article->image ?: asset('images/default.jpg');
+
             return response()->json([
                 'id_article'    => $article->id_article,
                 'reference'     => $article->reference,
                 'designation'   => $article->designation,
-                'image'         => $article->image,
+                'image'         => $image,
                 'stock_total'   => $article->stock,
                 'zones'         => $zones,
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Erreur recherche article : ' . $e->getMessage());
+            Log::error("Erreur recherche article : " . $e->getMessage());
 
             return response()->json([
                 'error' => 'Erreur interne du serveur'

@@ -40,31 +40,27 @@ Route::post('/logout', function (Request $request) {
 
 Route::middleware(['auth'])->group(function () {
 
-    // -------- Dashboard Principale --------
+    // Dashboard
     Route::get('/dashboard', function () {
         return view('dashboard.home');
     })->name('dashboard.home');
 
-    // -------- CRUD --------
+    // CRUD
     Route::resource('articles', ArticleController::class);
     Route::resource('collaborateurs', CollaborateurController::class);
     Route::resource('paniers', PanierController::class)->except(['destroy']);
 
-    // -------- Adressage --------
+    // Adressage (1 seule route)
     Route::get('/adresser', [AdresseController::class, 'index'])->name('article.location');
-    Route::get('/adresser-article', [AdresseController::class, 'index'])->name('adresses.index');
 
-    // -------- Zones --------
-    Route::get('/zones', function () {
-        return view('zones.index');
-    })->name('zones.index');
+    // Zones
+    Route::get('/zones', fn() => view('zones.index'))->name('zones.index');
 
-    // -------- Historique --------
-    Route::get('/historique', function () {
-        return view('historique.index');
-    })->name('historique.index');
+    // Historique
+    Route::get('/historique', fn() => view('historique.index'))->name('historique.index');
 
-    // -------- API internes --------
+    // API internes (POST)
     Route::post('/api/stockage/adresser', [StockageController::class, 'adresserArticle']);
     Route::post('/api/stockage/miseAJourStock', [StockageController::class, 'miseAJourStock']);
 });
+
