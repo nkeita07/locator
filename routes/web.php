@@ -76,4 +76,22 @@ Route::middleware(['auth'])->group(function () {
     // API internes
     Route::post('/api/stockage/adresser', [StockageController::class, 'adresserArticle']);
     Route::post('/api/stockage/miseAJourStock', [StockageController::class, 'miseAJourStock']);
+
+    Route::get('/adresser-article', [\App\Http\Controllers\AdresseController::class, 'index'])
+    ->name('article.location');
+
+    // Page principale d’adressage
+Route::get('/adresser', [\App\Http\Controllers\AdresseController::class, 'index'])
+    ->name('article.location');
+
+// Page Zones d’adressage (même si tu ne l’as pas encore)
+Route::get('/zones', function () {
+    return view('zones.index');
+})->name('zones.index');
+
+// Page Historique (même si vide)
+Route::get('/historique', function () {
+    return view('historique.index');
+})->name('historique.index');
+
 });
