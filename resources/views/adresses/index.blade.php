@@ -3,11 +3,17 @@
 
 @section('content')
 
+@php
+    // Autorisés à faire des actions de stock/adressage
+    $canAdress = auth()->user()?->hasAnyRole(['admin','logisticien']) ?? false;
+@endphp
+
 <style>
 :root {
     --blue: #2B3DB8;
     --green: #00B388;
     --gray-light: #F7F7F9;
+    --text: #1E1E2D;
 }
 
 /* Layout */
@@ -25,6 +31,25 @@
     margin-bottom: 1.5rem;
 }
 
+/* Bandeau accès */
+#accessBanner {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(720px, calc(100% - 24px));
+    background: #FFF3CD;
+    color: #856404;
+    border: 1px solid #FFEEBA;
+    border-radius: 12px;
+    padding: 12px 14px;
+    z-index: 99999;
+    display: none;
+    box-shadow: 0 10px 25px rgba(0,0,0,.15);
+    font-weight: 600;
+    font-size: .95rem;
+}
+
 /* Inputs */
 .input {
     width: 100%;
@@ -35,6 +60,12 @@
     font-size: 1rem;
 }
 .input:focus { border-color: var(--blue); outline: none; }
+
+.input.disabled {
+    background: #F1F3F6;
+    cursor: not-allowed;
+    color: #777;
+}
 
 .label {
     font-size: .85rem;
@@ -50,13 +81,8 @@
 }
 
 @media (max-width: 768px) {
-    .article-infos {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    #articleImage {
-        align-self: center;
-    }
+    .article-infos { flex-direction: column; align-items: stretch; }
+    #articleImage { align-self: center; }
 }
 
 #articleImage {
@@ -64,105 +90,100 @@
     height: 120px;
     border-radius: 12px;
     object-fit: cover;
+    background: #f3f4f6;
+    border: 1px solid #eef0f3;
 }
 
-/*** AUTOCOMPLÉTION – Suggestions Modernisées ***/
-.suggestions {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 8px 18px rgba(0,0,0,0.08);
-    border: 1px solid #E5E7EB;
-    z-index: 40;
-    overflow: hidden;
-    max-height: 330px;
-    display: none;
-    overflow-y: auto;
-}
-
-.suggestion-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: .9rem;
-    cursor: pointer;
-    transition: background .15s;
-}
-
-.suggestion-item:hover {
-    background: #EEF3FF;
-}
-
-.suggestion-img {
-    width: 55px;
-    height: 55px;
-    border-radius: 8px;
-    object-fit: cover;
-    background: #F3F4F6;
-}
-
-.suggestion-text {
-    display: flex;
-    flex-direction: column;
-}
-
-.suggestion-ref {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #1E1E2D;
-}
-
-.suggestion-des {
-    font-size: .88rem;
-    color: #555;
+.article-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text);
+    margin: .2rem 0 .35rem 0;
 }
 
 /*** ZONES EXISTANTES ***/
-.zones-section {
-    margin-top: .35rem;
-    width: 100%;
-}
+.zones-section { margin-top: .35rem; width: 100%; }
 
 .zones-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: .6rem;
+    gap: .7rem;
     width: 100%;
 }
 
 @media (min-width: 768px) {
-    .zones-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+    .zones-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .zone-row {
     background: var(--gray-light);
-    padding: .7rem .9rem;
-    border-radius: 12px;
+    padding: .85rem 1rem;
+    border-radius: 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
 }
 
-.zone-name { font-weight: 700; }
+.zone-left { display:flex; flex-direction:column; gap:2px; }
+.zone-name { font-weight: 800; font-size: 1.05rem; color:#111; }
+.zone-stock { font-size: .9rem; color:#4b5563; }
 
-.zone-actions { display: flex; gap: .3rem; }
+.zone-actions { display:flex; gap:.4rem; }
 
 .zone-btn {
     background: var(--blue);
     color: white;
     font-size: 20px;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
     border: none;
     cursor: pointer;
 }
+.zone-btn:active { transform: scale(.98); }
+
+.zone-btn.is-disabled {
+    background: #AEB5E6;
+    cursor: not-allowed;
+}
+
+/*** AUTOCOMPLÉTION (articles + zones) ***/
+.suggestions {
+    position: absolute;
+    background: white;
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+    margin-top: .35rem;
+    display: none;
+    z-index: 9999; /* important */
+    box-shadow: 0 12px 28px rgba(0,0,0,.08);
+    overflow: hidden;
+}
+
+.suggestion-item {
+    padding: .85rem .9rem;
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+.suggestion-item:hover { background: #EEF1FF; }
+
+.suggestion-thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: #f3f4f6;
+    border: 1px solid #eef0f3;
+    flex: 0 0 auto;
+}
+
+.suggestion-main { line-height: 1.2; }
+.suggestion-ref { font-weight: 800; color:#111; }
+.suggestion-name { font-size: .9rem; color:#4b5563; margin-top: 2px; }
 
 /*** STATUS MESSAGE ***/
 .status {
@@ -175,7 +196,7 @@
 .status-success { background: #D1FAE5; color:#065F46; }
 .status-error   { background: #FEE2E2; color:#9B1C1C; }
 
-/*** BUTTON ***/
+/*** BOUTON VALIDER ***/
 .btn-confirm {
     background: var(--green);
     color: white;
@@ -183,10 +204,15 @@
     border-radius: 10px;
     font-weight: bold;
     border: none;
-    width: 160px;
+    width: 180px;
     cursor: pointer;
 }
 .btn-confirm:hover { background:#009e78; }
+
+.btn-confirm.is-disabled {
+    background: #9ddccf;
+    cursor: not-allowed;
+}
 
 /*** MODAL ***/
 .modal-bg {
@@ -196,32 +222,29 @@
     display: none;
     justify-content: center;
     align-items: center;
-    z-index: 500;
+    z-index: 99999;
 }
-
 .modal-box {
     background: white;
-    width: 380px;
+    width: 420px;
     max-width: 95%;
     padding: 1.8rem;
     border-radius: 14px;
 }
+.modal-title { font-size: 1.25rem; font-weight: 800; }
+.modal-sub { font-size:.92rem; color:#6b7280; margin: .35rem 0 1rem 0; }
 
-.modal-title { font-size: 1.25rem; font-weight: 700; }
-.modal-sub { font-size:.9rem; color:#777; margin-bottom:1rem; }
-
-.modal-footer { display:flex; justify-content:space-between; margin-top:1.5rem; }
-
+.modal-footer { display:flex; justify-content:space-between; margin-top:1.2rem; gap:.7rem; }
 .modal-btn {
-    padding:.7rem 1.2rem;
-    border-radius:8px;
-    font-weight:600;
+    padding:.75rem 1.1rem;
+    border-radius:10px;
+    font-weight:700;
     border:none;
     cursor:pointer;
+    width: 100%;
 }
-
 .btn-cancel { background:#E5E7EB; }
-.btn-ok     { background:var(--green); color:white; }
+.btn-ok { background:var(--green); color:white; }
 
 /*** LOADER ***/
 #loader {
@@ -231,7 +254,7 @@
     display: none;
     justify-content: center;
     align-items: center;
-    z-index: 9999;
+    z-index: 99998;
 }
 .loader-spin {
     width: 45px;
@@ -244,39 +267,43 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 
+<div id="accessBanner">Vous n’avez pas les accès. Merci de contacter le gestionnaire de l’application.</div>
 
+{{-- LOADER --}}
 <div id="loader"><div class="loader-spin"></div></div>
 
 <div class="wrapper-adresser">
 
-    {{-- 🔍 RECHERCHE --}}
+    {{-- 1) RECHERCHE --}}
     <div class="card">
-        <label class="label">Référence ou nom de l'article</label>
 
-        <div class="relative">
-            <input type="text" id="refInput" class="input"
-                placeholder="608629, chaussure, ballon..."
-                autocomplete="off">
-            
+        <label class="label">Référence ou nom de l’article</label>
+        <div class="relative" style="position:relative;">
+            <input type="text"
+                   id="refInput"
+                   class="input"
+                   placeholder="Ex : 608629 ou chaussure"
+                   autocomplete="off">
             <div id="refSuggestions" class="suggestions"></div>
         </div>
 
         <div id="articleStatus"></div>
 
-        {{-- BLOC ARTICLE --}}
         <div id="articleBlock" style="display:none;" class="article-infos mt-4">
-
-            <img id="articleImage">
+            <img id="articleImage" src="{{ asset('images/default.jpg') }}" alt="Image article">
 
             <div style="flex:1">
 
-                <p class="text-sm text-gray-600">Référence : <b id="articleRef"></b></p>
-                <p class="font-bold text-lg" id="articleName"></p>
+                <div class="text-sm text-gray-600">
+                    Référence : <b id="articleRef"></b>
+                </div>
 
-                <p class="text-sm text-gray-600">Stock total : <b id="articleStock"></b></p>
-                <p class="text-sm text-gray-600">Stock adressé : <b id="articleStockAdr"></b></p>
+                <div id="articleName" class="article-title"></div>
 
-                <p class="text-xs text-gray-500 mt-3 mb-1">Zones existantes :</p>
+                <div class="text-sm text-gray-600">Stock total : <b id="articleStock"></b></div>
+                <div class="text-sm text-gray-600">Stock adressé : <b id="articleStockAdr"></b></div>
+
+                <div class="text-xs text-gray-500 mt-3 mb-1">Zones existantes :</div>
 
                 <div class="zones-section">
                     <div id="zonesList" class="zones-grid"></div>
@@ -286,24 +313,25 @@
         </div>
     </div>
 
-
-    {{-- ZONE --}}
+    {{-- 2) ZONE --}}
     <div class="card" id="zoneCard" style="display:none;">
         <label class="label">Zone</label>
-        <div class="relative">
-            <input type="text" id="zoneInput" class="input" placeholder="A1-2" autocomplete="off">
-            <div id="zoneSuggestions" class="suggestions"></div>
+        <div class="relative" style="position:relative;">
+            <input type="text"
+                   id="zoneInput"
+                   class="input"
+                   placeholder="Ex : A1-2"
+                   autocomplete="off">
+            <div class="suggestions" id="zoneSuggestions"></div>
         </div>
 
         <div id="zoneStatus"></div>
     </div>
 
-
-    {{-- DÉPÔT --}}
+    {{-- 3) DEPOT --}}
     <div class="card" id="depositCard" style="display:none;">
-
         <label class="label">Zone sélectionnée</label>
-        <div class="zone-badge" id="selectedZone"></div>
+        <div id="selectedZone" style="font-weight:800;color:var(--blue);margin-top:6px;"></div>
 
         <label class="label mt-3">Quantité</label>
         <input type="number" id="qtyInput" class="input" value="1" min="1">
@@ -317,7 +345,6 @@
 
 </div>
 
-
 {{-- MODAL + / - --}}
 <div id="stockModal" class="modal-bg">
     <div class="modal-box">
@@ -325,7 +352,7 @@
         <div class="modal-sub" id="modalProduct"></div>
 
         <label class="label">Quantité</label>
-        <input type="number" id="modalQty" class="input" value="1" min="1">
+        <input type="number" class="input" id="modalQty" value="1" min="1">
 
         <div id="modalMessage"></div>
 
@@ -338,55 +365,101 @@
 
 @endsection
 
-
-
 @push('scripts')
 <script>
-
 function showLoader(){ document.getElementById("loader").style.display="flex"; }
 function hideLoader(){ document.getElementById("loader").style.display="none"; }
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    const API = "{{ url('/api') }}";
+    const API  = "{{ url('/api') }}";
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+    // droits
+    const CAN_ADRESS = @json($canAdress);
+
+    // bandeau accès
+    const banner = document.getElementById('accessBanner');
+    function showAccessDenied(){
+        banner.style.display = 'block';
+        clearTimeout(window.__bannerTimer);
+        window.__bannerTimer = setTimeout(() => banner.style.display = 'none', 3500);
+    }
 
     let currentArticle = null;
 
-    /* DOM REFS */
-    const refInput    = document.getElementById("refInput");
-    const refSuggestions = document.getElementById("refSuggestions");
+    /* DOM refs */
+    const refInput        = document.getElementById("refInput");
+    const refSuggestions  = document.getElementById("refSuggestions");
 
-    const articleBlock  = document.getElementById("articleBlock");
-    const articleStatus = document.getElementById("articleStatus");
-
-    const articleImage  = document.getElementById("articleImage");
-    const articleName   = document.getElementById("articleName");
-    const articleRef    = document.getElementById("articleRef");
-    const articleStock  = document.getElementById("articleStock");
+    const articleBlock    = document.getElementById("articleBlock");
+    const articleStatus   = document.getElementById("articleStatus");
     const articleStockAdr = document.getElementById("articleStockAdr");
 
-    const zonesList   = document.getElementById("zonesList");
+    const zonesList       = document.getElementById("zonesList");
 
-    const zoneCard    = document.getElementById("zoneCard");
-    const zoneInput   = document.getElementById("zoneInput");
+    const articleImage    = document.getElementById("articleImage");
+    const articleName     = document.getElementById("articleName");
+    const articleRef      = document.getElementById("articleRef");
+    const articleStock    = document.getElementById("articleStock");
+
+    const zoneCard        = document.getElementById("zoneCard");
+    const zoneInput       = document.getElementById("zoneInput");
+    const zoneStatus      = document.getElementById("zoneStatus");
     const zoneSuggestions = document.getElementById("zoneSuggestions");
-    const zoneStatus  = document.getElementById("zoneStatus");
 
-    const depositCard = document.getElementById("depositCard");
-    const selectedZone= document.getElementById("selectedZone");
-    const qtyInput    = document.getElementById("qtyInput");
-    const depositBtn  = document.getElementById("depositBtn");
+    const depositCard     = document.getElementById("depositCard");
+    const selectedZone    = document.getElementById("selectedZone");
+    const qtyInput        = document.getElementById("qtyInput");
+    const depositBtn      = document.getElementById("depositBtn");
+    const depositStatus   = document.getElementById("depositStatus");
 
+    /* Modal */
+    const modal           = document.getElementById("stockModal");
+    const modalTitle      = document.getElementById("modalTitle");
+    const modalProduct    = document.getElementById("modalProduct");
+    const modalQty        = document.getElementById("modalQty");
+    const modalMessage    = document.getElementById("modalMessage");
+    const modalCancel     = document.getElementById("modalCancel");
+    const modalConfirm    = document.getElementById("modalConfirm");
 
-    /* ========================================================
-       AUTOCOMPLÉTION
-    ======================================================== */
+    let modalZone = null;
+    let modalMode = null;
 
-    let timer;
+    /* =======================================================
+       A) UI droits : griser si pas de droit
+    ======================================================= */
+    function applyRightsUI(){
+        if (!CAN_ADRESS) {
+            // griser zoneInput + empêcher focus
+            zoneInput.classList.add('disabled');
+            zoneInput.setAttribute('readonly', 'readonly');
 
+            // griser bouton valider dépôt
+            depositBtn.classList.add('is-disabled');
+        } else {
+            zoneInput.classList.remove('disabled');
+            zoneInput.removeAttribute('readonly');
+
+            depositBtn.classList.remove('is-disabled');
+        }
+    }
+    applyRightsUI();
+
+    // Clic sur zone input => message si pas droit
+    zoneInput.addEventListener('mousedown', (e) => {
+        if (!CAN_ADRESS) { e.preventDefault(); showAccessDenied(); }
+    });
+    zoneInput.addEventListener('keydown', (e) => {
+        if (!CAN_ADRESS) { e.preventDefault(); showAccessDenied(); }
+    });
+
+    /* =======================================================
+       1) AUTOCOMPLETE ARTICLES (liste uniquement)
+    ======================================================= */
+    let acTimer;
     refInput.addEventListener("input", () => {
-        clearTimeout(timer);
+        clearTimeout(acTimer);
 
         const q = refInput.value.trim();
         if (q.length < 2) {
@@ -394,77 +467,99 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        timer = setTimeout(() => loadSuggestions(q), 250);
+        acTimer = setTimeout(loadArticleSuggestions, 250);
     });
 
-    async function loadSuggestions(query) {
+    async function loadArticleSuggestions(){
+    const q = refInput.value.trim().toLowerCase();
+    if (q.length < 2) return;
 
-        try {
-            const res = await fetch(`${API}/article/autocomplete/${query}`);
-            const list = await res.json();
+    try {
+        const res = await fetch(`${API}/article/autocomplete/${encodeURIComponent(q)}`);
+        const data = await res.json();
 
-            if (!Array.isArray(list) || list.length === 0) {
-                refSuggestions.style.display = "none";
-                return;
-            }
-
-            refSuggestions.innerHTML = list.map(item => `
-                <div class="suggestion-item" data-ref="${item.reference}">
-                    <img src="${item.image}" class="suggestion-img">
-                    <div class="suggestion-text">
-                        <span class="suggestion-ref">${item.reference}</span>
-                        <span class="suggestion-des">${item.designation}</span>
-                    </div>
-                </div>
-            `).join('');
-
-            refSuggestions.style.display = "block";
-
-        } catch (e) {
-            console.error(e);
+        if (!Array.isArray(data)) {
+            refSuggestions.style.display = "none";
+            return;
         }
+
+        // ✅ FILTRAGE FRONT : COMMENCE PAR
+        const filtered = data.filter(a => {
+            const ref  = (a.reference || '').toLowerCase();
+            const name = (a.designation || '').toLowerCase();
+            return ref.startsWith(q) || name.startsWith(q);
+        });
+
+        if (filtered.length === 0) {
+            refSuggestions.style.display = "none";
+            return;
+        }
+
+        refSuggestions.innerHTML = filtered.map(a => `
+            <div class="suggestion-item" data-ref="${a.reference}">
+                <img class="suggestion-thumb"
+                     src="${a.image || '{{ asset('images/default.jpg') }}'}"
+                     alt="">
+                <div class="suggestion-main">
+                    <div class="suggestion-ref">${a.reference}</div>
+                    <div class="suggestion-name">${a.designation || ''}</div>
+                </div>
+            </div>
+        `).join('');
+
+        refSuggestions.style.display = "block";
+    } catch (e) {
+        refSuggestions.style.display = "none";
     }
+}
 
 
-    /* CLICK ON SUGGESTION */
-    refSuggestions.addEventListener("click", (e) => {
-        const row = e.target.closest(".suggestion-item");
-        if (!row) return;
+    // clic suggestion article => recherche réelle (search)
+    refSuggestions.addEventListener('click', (e) => {
+        const item = e.target.closest('.suggestion-item');
+        if (!item) return;
 
-        const ref = row.dataset.ref;
-
+        const ref = item.dataset.ref;
         refInput.value = ref;
         refSuggestions.style.display = "none";
 
         loadArticle(ref);
     });
 
+    // click outside => hide suggestions
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#refSuggestions') && !e.target.closest('#refInput')) {
+            refSuggestions.style.display = "none";
+        }
+        if (!e.target.closest('#zoneSuggestions') && !e.target.closest('#zoneInput')) {
+            zoneSuggestions.style.display = "none";
+        }
+    });
 
-    /* ========================================================
-       CHARGEMENT ARTICLE
-    ======================================================== */
+    /* =======================================================
+       2) RECHERCHE ARTICLE (appel API search)
+    ======================================================= */
+    async function loadArticle(query){
 
-    async function loadArticle(ref) {
+        const q = (query ?? refInput.value).trim();
+        if (q.length < 2) return;
 
-        const query = ref ?? refInput.value.trim();
-        if (!query) return;
-
-        articleStatus.innerHTML = `<div class="status">Recherche...</div>`;
+        articleStatus.innerHTML = `<div class="status">Recherche en cours...</div>`;
         articleBlock.style.display = "none";
-        zoneCard.style.display = "none";
-        depositCard.style.display = "none";
+        zoneCard.style.display     = "none";
+        depositCard.style.display  = "none";
 
         showLoader();
 
         try {
-            const res = await fetch(`${API}/article/search/${query}`);
+            const res  = await fetch(`${API}/article/search/${encodeURIComponent(q)}`);
             const data = await res.json();
 
             hideLoader();
 
             if (!res.ok) {
                 articleStatus.innerHTML =
-                    `<div class="status status-error">${data.error ?? "Introuvable"}</div>`;
+                    `<div class="status status-error">${data.error ?? "Article introuvable."}</div>`;
                 return;
             }
 
@@ -472,8 +567,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             articleName.textContent  = data.designation;
             articleRef.textContent   = data.reference;
-            articleStock.textContent = data.stock_total;
-            articleImage.src         = data.image;
+            articleStock.textContent = data.stock_total ?? data.stock ?? "N/A";
+            articleImage.src         = data.image ?? "{{ asset('images/default.jpg') }}";
 
             const totalAdr = (data.zones ?? [])
                 .reduce((sum, z) => sum + (z.stock || 0), 0);
@@ -484,171 +579,211 @@ document.addEventListener("DOMContentLoaded", () => {
 
             articleBlock.style.display = "flex";
             zoneCard.style.display     = "block";
-            articleStatus.innerHTML = "";
+            articleStatus.innerHTML    = "";
+
+            // appliquer UI droits (boutons grisés ou non)
+            applyRightsUI();
 
         } catch (e) {
             hideLoader();
-            articleStatus.innerHTML = `<div class="status status-error">Erreur réseau</div>`;
+            articleStatus.innerHTML = `<div class='status status-error'>Erreur réseau.</div>`;
         }
     }
 
+    // Entrée => recherche directe (au lieu de sélectionner automatiquement)
+    refInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            refSuggestions.style.display = "none";
+            loadArticle();
+        }
+    });
 
-    /* ========================================================
-       AFFICHAGE DES ZONES
-    ======================================================== */
+    /* =======================================================
+       3) ZONES EXISTANTES (SANS stock 0)
+    ======================================================= */
+    function renderZones(zones){
 
-    function renderZones(zones) {
+        const filtered = zones.filter(z => (z.stock || 0) > 0);
 
-        const filtered = zones.filter(z => z.stock > 0);
-
-        if (filtered.length === 0) {
-            zonesList.innerHTML = `<div class='text-gray-400 text-xs'>Aucune zone.</div>`;
+        if (filtered.length === 0){
+            zonesList.innerHTML =
+                `<div class='text-gray-400 text-xs'>Aucune zone avec stock.</div>`;
             return;
         }
 
         zonesList.innerHTML = filtered.map(z => `
             <div class="zone-row">
-                <div>
+                <div class="zone-left">
                     <span class="zone-name">${z.zone}</span>
-                    <span class="text-xs text-gray-600"> · ${z.stock} unités</span>
+                    <span class="zone-stock">${z.stock} unités</span>
                 </div>
 
                 <div class="zone-actions">
-                    <button class="zone-btn" data-zone="${z.zone}" data-mode="remove">–</button>
-                    <button class="zone-btn" data-zone="${z.zone}" data-mode="add">+</button>
+                    <button class="zone-btn ${CAN_ADRESS ? '' : 'is-disabled'}"
+                            data-zone="${z.zone}"
+                            data-mode="remove"
+                            type="button">–</button>
+
+                    <button class="zone-btn ${CAN_ADRESS ? '' : 'is-disabled'}"
+                            data-zone="${z.zone}"
+                            data-mode="add"
+                            type="button">+</button>
                 </div>
             </div>
         `).join('');
     }
 
-
-    /* ========================================================
-       AUTOCOMPLÉTION ZONES
-    ======================================================== */
-
+    /* =======================================================
+       4) AUTOCOMPLÉTION ZONES
+    ======================================================= */
     zoneInput.addEventListener("input", async () => {
+        if (!CAN_ADRESS) { showAccessDenied(); zoneSuggestions.style.display="none"; return; }
 
         const q = zoneInput.value.trim();
         if (!q) return zoneSuggestions.style.display = "none";
 
-        const res = await fetch(`${API}/adresse/search/${q}`);
-        const list = await res.json();
+        try {
+            const res  = await fetch(`${API}/adresse/search/${encodeURIComponent(q)}`);
+            const data = await res.json();
 
-        if (!Array.isArray(list) || list.length === 0) {
-            zoneSuggestions.style.display = "none";
-            return;
-        }
+            if (!Array.isArray(data) || data.length === 0){
+                zoneSuggestions.style.display = "none";
+                return;
+            }
 
-        zoneSuggestions.innerHTML = list
-            .map(z => `<div class="suggestion-item" data-zone="${z.zone}">${z.zone}</div>`)
-            .join('');
+            // IMPORTANT : item cliquable
+            zoneSuggestions.innerHTML = data
+                .map(z => `<div class="suggestion-item" data-zone="${z.zone}">${z.zone}</div>`)
+                .join("");
 
-        zoneSuggestions.style.display = "block";
+            zoneSuggestions.style.display = "block";
+        } catch (_) {}
     });
 
+    // clic suggestion zone
     zoneSuggestions.addEventListener("click", async (e) => {
-        const div = e.target.closest(".suggestion-item");
-        if (!div) return;
 
-        const zone = div.dataset.zone;
+        const item = e.target.closest('[data-zone]');
+        if (!item) return;
 
+        if (!CAN_ADRESS) { showAccessDenied(); zoneSuggestions.style.display="none"; return; }
+
+        const zone = item.dataset.zone;
         zoneInput.value = zone;
         zoneSuggestions.style.display = "none";
 
-        zoneStatus.innerHTML = `<div class='status'>Validation...</div>`;
+        if (!currentArticle) return;
+
+        zoneStatus.innerHTML = `<div class='status'>Validation en cours...</div>`;
         showLoader();
 
-        const res = await fetch(`${API}/stockage/adresser`, {
-            method: "POST",
-            headers: {
-                "Content-Type":"application/json",
-                "X-CSRF-TOKEN": csrf
-            },
-            body: JSON.stringify({
-                reference: currentArticle.reference,
-                zone: zone
-            })
-        });
+        try {
+            const res = await fetch(`${API}/stockage/adresser`, {
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json",
+                    "X-CSRF-TOKEN":csrf
+                },
+                body:JSON.stringify({
+                    reference: currentArticle.reference,
+                    zone: zone
+                })
+            });
 
-        hideLoader();
-        const data = await res.json();
+            const data = await res.json();
+            hideLoader();
 
-        if (!res.ok) {
+            if (!res.ok){
+                // si ton backend renvoie 403 pour vendeur
+                if (res.status === 403) {
+                    zoneStatus.innerHTML = "";
+                    showAccessDenied();
+                    return;
+                }
+                zoneStatus.innerHTML =
+                    `<div class='status status-error'>${data.error ?? "Zone invalide."}</div>`;
+                return;
+            }
+
             zoneStatus.innerHTML =
-                `<div class='status status-error'>${data.error ?? "Zone invalide"}</div>`;
-            return;
+                `<div class='status status-success'>Zone validée.</div>`;
+
+            selectedZone.textContent = zone;
+            depositCard.style.display = "block";
+            applyRightsUI();
+
+        } catch (e) {
+            hideLoader();
+            zoneStatus.innerHTML = `<div class='status status-error'>Erreur réseau.</div>`;
         }
-
-        zoneStatus.innerHTML =
-            `<div class='status status-success'>Zone validée.</div>`;
-
-        selectedZone.textContent = zone;
-        depositCard.style.display = "block";
     });
 
-
-    /* ========================================================
-       AJOUT STOCK
-    ======================================================== */
-
+    /* =======================================================
+       5) Dépôt classique (ADD)
+    ======================================================= */
     depositBtn.addEventListener("click", async () => {
 
-        const qty = parseInt(qtyInput.value);
-        if (!qty || qty < 1) {
-            depositStatus.innerHTML = `<div class='status status-error'>Quantité invalide</div>`;
+        if (!CAN_ADRESS) { showAccessDenied(); return; }
+
+        depositStatus.innerHTML = "";
+        const zone = selectedZone.textContent.trim();
+        const qty  = parseInt(qtyInput.value);
+
+        if (!qty || qty < 1){
+            depositStatus.innerHTML =
+                `<div class='status status-error'>Quantité invalide.</div>`;
             return;
         }
 
-        depositStatus.innerHTML = `<div class='status'>Mise à jour...</div>`;
+        depositStatus.innerHTML = `<div class='status'>Mise à jour en cours...</div>`;
         showLoader();
 
-        const res = await fetch(`${API}/stockage/miseAJourStock`, {
-            method: "POST",
-            headers: {
-                "Content-Type":"application/json",
-                "X-CSRF-TOKEN": csrf
-            },
-            body: JSON.stringify({
-                reference: currentArticle.reference,
-                zone: selectedZone.textContent,
-                quantite: qty
-            })
-        });
+        try {
+            const res = await fetch(`${API}/stockage/miseAJourStock`, {
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json",
+                    "X-CSRF-TOKEN":csrf
+                },
+                body:JSON.stringify({
+                    reference: currentArticle.reference,
+                    zone: zone,
+                    quantite: qty
+                })
+            });
 
-        hideLoader();
+            const data = await res.json();
+            hideLoader();
 
-        const data = await res.json();
-        if (!res.ok) {
-            depositStatus.innerHTML = `<div class='status status-error'>${data.error}</div>`;
-            return;
+            if (!res.ok){
+                if (res.status === 403) { depositStatus.innerHTML=""; showAccessDenied(); return; }
+
+                depositStatus.innerHTML =
+                    `<div class='status status-error'>${data.error ?? "Erreur lors du dépôt."}</div>`;
+                return;
+            }
+
+            depositStatus.innerHTML =
+                `<div class='status status-success'>+${qty} unités ajoutées dans <b>${zone}</b>.</div>`;
+
+            qtyInput.value = 1;
+            loadArticle(currentArticle.reference);
+
+        } catch (e) {
+            hideLoader();
+            depositStatus.innerHTML = `<div class='status status-error'>Erreur réseau.</div>`;
         }
-
-        depositStatus.innerHTML =
-            `<div class='status status-success'>+${qty} unités ajoutées.</div>`;
-
-        loadArticle(currentArticle.reference);
     });
 
-
-    /* ========================================================
-       MODAL + / -
-    ======================================================== */
-
-    const modal = document.getElementById("stockModal");
-    const modalTitle = document.getElementById("modalTitle");
-    const modalProduct = document.getElementById("modalProduct");
-    const modalQty = document.getElementById("modalQty");
-    const modalMessage = document.getElementById("modalMessage");
-
-    const modalCancel = document.getElementById("modalCancel");
-    const modalConfirm = document.getElementById("modalConfirm");
-
-    let modalZone = null;
-    let modalMode = null;
-
+    /* =======================================================
+       6) MODAL + / -
+    ======================================================= */
     zonesList.addEventListener("click", (e) => {
         const btn = e.target.closest(".zone-btn");
         if (!btn) return;
+
+        // si pas droits => message (même si bouton grisé)
+        if (!CAN_ADRESS) { showAccessDenied(); return; }
 
         modalZone = btn.dataset.zone;
         modalMode = btn.dataset.mode;
@@ -659,7 +794,7 @@ document.addEventListener("DOMContentLoaded", () => {
         modalTitle.textContent =
             modalMode === "add" ? "Ajouter du stock" : "Retirer du stock";
 
-        modalProduct.textContent = `Article ${currentArticle.reference} – Zone ${modalZone}`;
+        modalProduct.textContent = `Réf. ${currentArticle.reference} · Zone ${modalZone}`;
 
         modal.style.display = "flex";
     });
@@ -668,39 +803,48 @@ document.addEventListener("DOMContentLoaded", () => {
 
     modalConfirm.addEventListener("click", async () => {
 
-        const q = parseInt(modalQty.value);
-        if (!q || q < 1) return;
+        if (!CAN_ADRESS) { showAccessDenied(); return; }
 
-        const quantite = modalMode === "add" ? q : -q;
+        const qty = parseInt(modalQty.value);
+        if (!qty || qty < 1) return;
 
-        modalMessage.innerHTML = `<div class="status">Mise à jour...</div>`;
+        const quantite = (modalMode === "add") ? qty : -qty;
+
+        modalMessage.innerHTML = `<div class='status'>Mise à jour en cours...</div>`;
         showLoader();
 
-        const res = await fetch(`${API}/stockage/miseAJourStock`, {
-            method: "POST",
-            headers: {
-                "Content-Type":"application/json",
-                "X-CSRF-TOKEN": csrf
-            },
-            body: JSON.stringify({
-                reference: currentArticle.reference,
-                zone: modalZone,
-                quantite: quantite
-            })
-        });
+        try {
+            const res = await fetch(`${API}/stockage/miseAJourStock`, {
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json",
+                    "X-CSRF-TOKEN":csrf
+                },
+                body:JSON.stringify({
+                    reference: currentArticle.reference,
+                    zone: modalZone,
+                    quantite: quantite
+                })
+            });
 
-        hideLoader();
+            const data = await res.json();
+            hideLoader();
 
-        const data = await res.json();
+            if (!res.ok){
+                if (res.status === 403) { modalMessage.innerHTML=""; modal.style.display="none"; showAccessDenied(); return; }
 
-        if (!res.ok) {
-            modalMessage.innerHTML =
-                `<div class="status status-error">${data.error}</div>`;
-            return;
+                modalMessage.innerHTML =
+                    `<div class='status status-error'>${data.error ?? "Erreur lors de la mise à jour."}</div>`;
+                return;
+            }
+
+            modal.style.display = "none";
+            loadArticle(currentArticle.reference);
+
+        } catch (e) {
+            hideLoader();
+            modalMessage.innerHTML = `<div class='status status-error'>Erreur réseau.</div>`;
         }
-
-        modal.style.display = "none";
-        loadArticle(currentArticle.reference);
     });
 
 });

@@ -1,3 +1,7 @@
+<script>
+    const USER_ROLE = "{{ auth()->user()->role }}"; 
+</script>
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>

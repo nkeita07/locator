@@ -6,49 +6,44 @@ use App\Http\Controllers\StockageController;
 use App\Models\Adresse;
 
 /*
-|--------------------------------------------------------------------------
-| TEST API
-|--------------------------------------------------------------------------
+|--------------------------------------------------------------------------|
+| Test API
+|--------------------------------------------------------------------------|
 */
 Route::get('/test-api', fn() => response()->json(['status' => 'API OK']));
 
-
 /*
-|--------------------------------------------------------------------------
-| AUTOCOMPLÉTION ARTICLES
-| → recherche par référence OU nom
-|--------------------------------------------------------------------------
+|--------------------------------------------------------------------------|
+| Articles - Autocomplete (AVANT search)
+|--------------------------------------------------------------------------|
 */
-Route::get('/article/autocomplete/{query}', [ArticleController::class, 'autocomplete']);
-
+Route::get('/article/autocomplete/{query}', [ArticleController::class, 'autocomplete'])
+    ->where('query', '.*');
 
 /*
-|--------------------------------------------------------------------------
-| RECHERCHE ARTICLE PRINCIPALE
-| → par référence exacte
-| → sinon par nom
-|--------------------------------------------------------------------------
+|--------------------------------------------------------------------------|
+| Articles - Search (référence exacte, sinon désignation partielle)
+|--------------------------------------------------------------------------|
 */
-Route::get('/article/search/{query}', [ArticleController::class, 'search']);
-
-
+Route::get('/article/search/{query}', [ArticleController::class, 'search'])
+    ->where('query', '.*');
 
 /*
-|--------------------------------------------------------------------------
-| AUTOCOMPLÉTION DE ZONES
-|--------------------------------------------------------------------------
+|--------------------------------------------------------------------------|
+| Zones - Autocomplete
+|--------------------------------------------------------------------------|
 */
 Route::get('/adresse/search/{zone}', function ($zone) {
     return Adresse::where('zone', 'LIKE', $zone . '%')
         ->select('zone')
+        ->limit(20)
         ->get();
 });
 
-
 /*
-|--------------------------------------------------------------------------
-| STOCKAGE
-|--------------------------------------------------------------------------
+|--------------------------------------------------------------------------|
+| Stockage
+|--------------------------------------------------------------------------|
 */
 Route::post('/stockage/adresser', [StockageController::class, 'adresserArticle']);
 Route::post('/stockage/miseAJourStock', [StockageController::class, 'miseAJourStock']);

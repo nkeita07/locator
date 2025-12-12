@@ -117,7 +117,7 @@ class IamAuthController extends Controller
         );
         
         // 5. Connecter le Collaborateur et rompre la boucle
-        Auth::login($collaborateur, true);
+        Auth::login($collaborateur);
 
         // 6. Rediriger vers le tableau de bord (sortie de la boucle)
         return redirect()->route('dashboard.home'); 

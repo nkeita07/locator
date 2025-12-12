@@ -2,31 +2,32 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Notifications\Notifiable;
 
 class Collaborateur extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, Notifiable;
 
-    protected $table = 'collaborateurs';
+    protected $table = 'collaborateurs'; // ✅ CORRIGÉ
     protected $primaryKey = 'id_collaborateur';
-
-    // Indique à Laravel qu'il n’y a PAS de remember_token dans cette table
-    protected $rememberTokenName = false;
 
     protected $fillable = [
         'name',
         'email',
         'password',
-        'feid',
+        'feid'
     ];
 
-    public $timestamps = false; // Ta table n'a ni created_at ni updated_at définis par Eloquent
+    protected $hidden = [
+        'password',
+    ];
 
     /**
-     * 🔹 Relation Many-to-Many : un collaborateur possède plusieurs rôles
-     * Via la table pivot collaborateur_role
+     * ----------------------------------------------------------------------
+     * RELATION : ROLES
+     * ----------------------------------------------------------------------
      */
     public function roles()
     {
@@ -39,20 +40,41 @@ class Collaborateur extends Authenticatable
     }
 
     /**
-     * 🔹 Vérifie si l'utilisateur possède un rôle donné
-     * Usage : $user->hasRole('admin')
+     * ----------------------------------------------------------------------
+     * AUTORISATIONS
+     * ----------------------------------------------------------------------
      */
     public function hasRole(string $role): bool
     {
-        return $this->roles()->where('libelle', $role)->exists();
+        return $this->roles()
+            ->where('libelle', $role)
+            ->exists();
+    }
+
+    public function hasAnyRole(array $roles): bool
+    {
+        return $this->roles()
+            ->whereIn('libelle', $roles)
+            ->exists();
     }
 
     /**
-     * 🔹 Relation éventuelle : collaborateur appartient à un magasin
-     * (Ne sera active que si tu ajoutes id_store dans la table collaborateurs)
+     * ----------------------------------------------------------------------
+     * HELPERS
+     * ----------------------------------------------------------------------
      */
-    public function magasin()
+    public function isAdmin(): bool
     {
-        return $this->belongsTo(Magasin::class, 'id_store', 'id_store');
+        return $this->hasRole('admin');
+    }
+
+    public function isLogisticien(): bool
+    {
+        return $this->hasRole('logisticien');
+    }
+
+    public function isVendeur(): bool
+    {
+        return $this->hasRole('vendeur');
     }
 }
