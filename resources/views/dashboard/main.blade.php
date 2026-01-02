@@ -121,7 +121,6 @@
         {{-- Liens --}}
         <a href="{{ route('dashboard.home') }}" class="sidebar-link">Accueil</a>
         <a href="{{ route('article.location') }}" class="sidebar-link">Adresser un article</a>
-        <a href="{{ route('zones.index') }}" class="sidebar-link">Zones</a>
         <a href="{{ route('historique.index') }}" class="sidebar-link">Historique</a>
 
         {{-- FOOTER --}}

@@ -849,4 +849,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+    const params = new URLSearchParams(window.location.search);
+    if(params.has('search')){
+        const input = document.getElementById('refInput');
+        if(input){
+            input.value = params.get('search');
+            input.focus();
+            input.dispatchEvent(new Event('input'));
+        }
+    }
+});
+</script>
+
 @endpush

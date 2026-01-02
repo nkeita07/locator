@@ -10,6 +10,7 @@ use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AdresseController;
 use App\Http\Controllers\CollaborateurController;
 use App\Http\Controllers\PanierController;
+use App\Http\Controllers\HistoriqueController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,7 +32,6 @@ Route::post('/logout', function (Request $request) {
     return redirect()->route('welcome');
 })->name('logout');
 
-
 /*
 |--------------------------------------------------------------------------
 | Routes protégées (auth)
@@ -41,26 +41,45 @@ Route::post('/logout', function (Request $request) {
 Route::middleware(['auth'])->group(function () {
 
     // Dashboard
-    Route::get('/dashboard', function () {
-        return view('dashboard.home');
-    })->name('dashboard.home');
+    Route::get('/dashboard', fn() => view('dashboard.home'))->name('dashboard.home');
 
     // CRUD
     Route::resource('articles', ArticleController::class);
     Route::resource('collaborateurs', CollaborateurController::class);
     Route::resource('paniers', PanierController::class)->except(['destroy']);
 
-    // Adressage (1 seule route)
+    // Adressage
     Route::get('/adresser', [AdresseController::class, 'index'])->name('article.location');
 
-    // Zones
+    // Zones (assure-toi que cette route existe bien car ton dashboard l'appelle)
     Route::get('/zones', fn() => view('zones.index'))->name('zones.index');
 
     // Historique
-    Route::get('/historique', fn() => view('historique.index'))->name('historique.index');
+    Route::get('/historique', [HistoriqueController::class, 'index'])->name('historique.index');
+
+    // Listes dashboard
+    Route::get('/historique/articles-non-adresses', [HistoriqueController::class, 'articlesNonAdresses'])
+        ->name('historique.articles.non_adresses');
+
+    Route::get('/historique/articles-sur-stockes', [HistoriqueController::class, 'articlesSurStockes'])
+        ->name('historique.articles.sur_stockes');
+
+    // Export Excel (table filtrée)
+    Route::get('/historique/export-excel', [HistoriqueController::class, 'exportExcel'])
+        ->name('historique.export.excel');
 
     // API internes (POST)
     Route::post('/api/stockage/adresser', [StockageController::class, 'adresserArticle']);
     Route::post('/api/stockage/miseAJourStock', [StockageController::class, 'miseAJourStock']);
-});
 
+    // Historique
+Route::get('/historique', [HistoriqueController::class, 'index'])
+    ->name('historique.index');
+
+Route::get('/historique/articles-non-adresses', [HistoriqueController::class, 'articlesNonAdresses'])
+    ->name('historique.non_adresses');
+
+Route::get('/historique/articles-sur-stockes', [HistoriqueController::class, 'articlesSurStockes'])
+    ->name('historique.sur_stockes');
+
+});
